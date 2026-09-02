@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils"
 export const metadata: Metadata = {
   title: "The Global Altar Watch",
   description: "8 Gates of Society — Isaiah 19 Highway",
+  manifest: "/manifest.json",
   icons: {
     icon: "/images/logo.png",
   },

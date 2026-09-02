@@ -1,0 +1,13 @@
+{
+  "name": "The Global Altar Watch",
+  "short_name": "TGAW",
+  "description": "Daily devotion, prayer, and fellowship worldwide — 8 Gates of Society.",
+  "start_url": "/overview",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#7c3aed",
+  "icons": [
+    { "src": "/images/logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/images/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

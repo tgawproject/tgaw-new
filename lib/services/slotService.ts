@@ -9,6 +9,7 @@ import {
   enrichSlotsWithEvents,
   type EventSummary,
 } from "./slotEventEnrichment";
+import { dispatchNotification } from "@/lib/notifications/dispatch";
 
 /**
  * Generate 48 slots per day for a given date range.
@@ -375,8 +376,19 @@ export async function bookSlots(slotIds: string[], userId: string, notes?: strin
     },
   });
 
-  // Stub notification
-  console.log(`[Notification Stub] Booking confirmed for user ${userId} on ${date} ${type}`);
+  // Real notification: SLOT_REMINDER to booking user
+  {
+    const start = firstSlot.startTime;
+    const end = slots[slots.length - 1].endTime;
+    const timeRange = slots.length === 1 ? start : `${start}–${end}`;
+    dispatchNotification({
+      userId,
+      type: "SLOT_REMINDER",
+      title: "Booking confirmed",
+      body: `You've booked ${type} on ${date} at ${timeRange} UTC.`,
+      link: "/booking",
+    }).catch((e) => console.error("[ERROR] dispatch booking notification failed", e instanceof Error ? e.message : String(e)));
+  }
 
   return await prisma.slot.findMany({
     where: { id: { in: slotIds } },
@@ -402,8 +414,39 @@ export async function cancelSlot(slotId: string, userId: string) {
     },
   });
 
-  // Stub notification
-  console.log(`[Notification Stub] User ${userId} cancelled ${slot.type} slot on ${slot.date}`);
+  // Real notifications: confirm to canceller + alert leaders
+  {
+    dispatchNotification({
+      userId,
+      type: "SLOT_REMINDER",
+      title: "Booking cancelled",
+      body: `Your ${slot.type} booking on ${slot.date} at ${slot.startTime} UTC has been cancelled.`,
+      link: "/booking",
+    }).catch((e) => console.error("[ERROR] dispatch cancel notification failed", e instanceof Error ? e.message : String(e)));
+    // Alert leaders/superadmins
+    prisma.user
+      .findMany({ where: { role: { in: ["leader", "superadmin"] } }, select: { id: true, name: true } })
+      .then((leaders) => {
+        if (leaders.length === 0) return;
+        return prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true } }).then((actor) => {
+          const actorName = actor?.name || actor?.email || userId;
+          return Promise.allSettled(
+            leaders
+              .filter((l) => l.id !== userId)
+              .map((l) =>
+                dispatchNotification({
+                  userId: l.id,
+                  type: "SLOT_REMINDER",
+                  title: "Slot cancellation",
+                  body: `${actorName} cancelled their ${slot.type} slot on ${slot.date} at ${slot.startTime} UTC.`,
+                  link: "/admin",
+                }),
+              ),
+          );
+        });
+      })
+      .catch((e) => console.error("[ERROR] dispatch leader alert failed", e instanceof Error ? e.message : String(e)));
+  }
   return true;
 }
 
@@ -411,10 +454,7 @@ export async function adminAssignSlot(slotId: string, targetUserId: string, admi
   const slot = await prisma.slot.findUnique({ where: { id: slotId } });
   if (!slot) throw new Error("Slot not found");
 
-  if (slot.bookedBy) {
-    // Notify previous holder
-    console.log(`[Notification Stub] Previous holder ${slot.bookedBy} displaced from slot ${slotId}`);
-  }
+  const prevHolderId = slot.bookedBy && slot.bookedBy !== targetUserId ? slot.bookedBy : null;
 
   await prisma.slot.update({
     where: { id: slotId },
@@ -425,8 +465,27 @@ export async function adminAssignSlot(slotId: string, targetUserId: string, admi
     },
   });
 
-  // Notify assigned user
-  console.log(`[Notification Stub] Admin ${adminUserId} assigned slot ${slotId} to user ${targetUserId}`);
+  // Notify assigned user: GROUP_INVITE / SLOT_REMINDER
+  {
+    const admin = await prisma.user.findUnique({ where: { id: adminUserId }, select: { name: true, email: true } });
+    const adminName = admin?.name || admin?.email || "An admin";
+    dispatchNotification({
+      userId: targetUserId,
+      type: "GROUP_INVITE",
+      title: "Slot assigned to you",
+      body: `A ${slot.type} slot on ${slot.date} at ${slot.startTime} UTC has been assigned to you by ${adminName}.`,
+      link: "/booking",
+    }).catch((e) => console.error("[ERROR] dispatch assign notification failed", e instanceof Error ? e.message : String(e)));
+  }
+  if (prevHolderId) {
+    dispatchNotification({
+      userId: prevHolderId,
+      type: "SLOT_REMINDER",
+      title: "Slot reassigned",
+      body: `Your ${slot.type} slot on ${slot.date} at ${slot.startTime} UTC was reassigned to another member.`,
+      link: "/booking",
+    }).catch((e) => console.error("[ERROR] dispatch displaced notification failed", e instanceof Error ? e.message : String(e)));
+  }
   return true;
 }
 
@@ -446,7 +505,14 @@ export async function adminCancelSlot(slotId: string, adminUserId: string, reaso
   });
 
   if (prevUserId) {
-    console.log(`[Notification Stub] Admin ${adminUserId} force-cancelled slot ${slotId} for user ${prevUserId}. Reason: ${reason}`);
+    const reasonSuffix = reason ? ` Reason: ${reason}` : "";
+    dispatchNotification({
+      userId: prevUserId,
+      type: "SLOT_REMINDER",
+      title: "Booking cancelled by admin",
+      body: `Your ${slot.type} booking on ${slot.date} at ${slot.startTime} UTC was cancelled by an admin.${reasonSuffix}`,
+      link: "/booking",
+    }).catch((e) => console.error("[ERROR] dispatch admin-cancel notification failed", e instanceof Error ? e.message : String(e)));
   }
   
   return true;

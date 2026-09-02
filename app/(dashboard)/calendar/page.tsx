@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import type { EventType } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db/prisma";
+import { IcalCopyButton } from "@/components/calendar/ical-copy-button";
 import {
 	CalendarView,
 	type CalendarItem,
@@ -135,11 +136,14 @@ export default async function CalendarPage(props: {
 
 	return (
 		<div className="flex flex-col gap-6">
-			<div>
-				<h1 className="text-2xl">Calendar</h1>
+			<div className="flex flex-col gap-3">
+				<div>
+					<h1 className="text-2xl">Calendar</h1>
 				<p className="text-muted-foreground">
 					Manage your schedule and events
 				</p>
+				</div>
+				<IcalCopyButton token={session.user.id} />
 			</div>
 
 			<CalendarView

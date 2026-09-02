@@ -19,12 +19,26 @@ export default async function CoordinatorDashboardPage() {
   })
   const timezones = assignments.map((a) => a.timezone)
 
+  // If coordinator has assigned timezones, scope booking counts to users in those timezones
+  let scopeUserIds: string[] | null = null
+  if (timezones.length > 0) {
+    const usersInScope = await prisma.userProfile.findMany({
+      where: { timezone: { in: timezones } },
+      select: { userId: true },
+    })
+    scopeUserIds = usersInScope.map((u) => u.userId)
+  }
+
+  const scopedBookedFilter = scopeUserIds
+    ? { bookedBy: { in: scopeUserIds } }
+    : { bookedBy: { not: null } as const }
+
   const [totalSlots, bookedSlots, totalBookings, todayBookings] =
     await Promise.all([
       prisma.slot.count({ where: { date: { gte: today } } }),
-      prisma.slot.count({ where: { date: { gte: today }, bookedBy: { not: null } } }),
-      prisma.slot.count({ where: { bookedBy: { not: null } } }),
-      prisma.slot.count({ where: { date: today, bookedBy: { not: null } } }),
+      prisma.slot.count({ where: { date: { gte: today }, ...scopedBookedFilter } }),
+      prisma.slot.count({ where: { ...scopedBookedFilter } }),
+      prisma.slot.count({ where: { date: today, ...scopedBookedFilter } }),
     ])
 
   const engagement =

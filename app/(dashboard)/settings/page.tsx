@@ -23,6 +23,7 @@ import {
   Download,
   Send,
 } from "lucide-react"
+import * as React from "react"
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { useEffect, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
@@ -83,6 +84,7 @@ import {
   updateProfile,
 } from "@/lib/actions/settingsActions"
 import { AvatarUploadDialog } from "@/components/settings/AvatarUploadDialog"
+import { getAllTimezones } from "@/lib/timezones"
 
 const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -112,25 +114,16 @@ const passwordSchema = z
 
 type PasswordForm = z.infer<typeof passwordSchema>
 
-const TIMEZONE_OPTIONS = [
-  { value: "Pacific/Honolulu", label: "(GMT-10:00) Honolulu" },
-  { value: "America/Los_Angeles", label: "(GMT-08:00) Los Angeles" },
-  { value: "America/Denver", label: "(GMT-07:00) Denver" },
-  { value: "America/Chicago", label: "(GMT-06:00) Chicago" },
-  { value: "America/New_York", label: "(GMT-05:00) New York" },
-  { value: "UTC", label: "(GMT+00:00) UTC" },
-  { value: "Europe/London", label: "(GMT+00:00) London" },
-  { value: "Africa/Accra", label: "(GMT+00:00) Accra" },
-  { value: "Africa/Lagos", label: "(GMT+01:00) Lagos" },
-  { value: "Europe/Berlin", label: "(GMT+01:00) Berlin" },
-  { value: "Africa/Johannesburg", label: "(GMT+02:00) Johannesburg" },
-  { value: "Africa/Nairobi", label: "(GMT+03:00) Nairobi" },
-  { value: "Asia/Dubai", label: "(GMT+04:00) Dubai" },
-  { value: "Asia/Kolkata", label: "(GMT+05:30) Kolkata" },
-  { value: "Asia/Singapore", label: "(GMT+08:00) Singapore" },
-  { value: "Asia/Tokyo", label: "(GMT+09:00) Tokyo" },
-  { value: "Australia/Sydney", label: "(GMT+10:00) Sydney" },
-]
+const TIMEZONE_OPTIONS = getAllTimezones().map((tz) => {
+  try {
+    const fmt = new Intl.DateTimeFormat("en", { timeZone: tz, timeZoneName: "shortOffset" })
+    const parts = fmt.formatToParts(new Date())
+    const offset = parts.find((p) => p.type === "timeZoneName")?.value ?? ""
+    return { value: tz, label: `${offset ? `(${offset}) ` : ""}${tz.replaceAll("_", " ")}` }
+  } catch {
+    return { value: tz, label: tz }
+  }
+})
 
 const AGE_RANGES = [
   "under-18",
@@ -354,6 +347,171 @@ function ThemePreview({ variant }: { variant: "light" | "dark" | "system" }) {
       </div>
     </div>
   )
+}
+
+
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
+
+function PushSubscriptionManager() {
+  const [permission, setPermission] = React.useState<NotificationPermission | "unsupported">("default");
+  const [isSubscribed, setIsSubscribed] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [isBusy, setIsBusy] = React.useState(false);
+  const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || "";
+
+  const refresh = React.useCallback(async () => {
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      setPermission("unsupported");
+      setIsLoading(false);
+      return;
+    }
+    setPermission(Notification.permission);
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      setIsSubscribed(!!sub);
+    } catch {
+      setIsSubscribed(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    refresh();
+    // register sw if not already
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+  }, [refresh]);
+
+  const handleEnable = async () => {
+    if (!("Notification" in window)) {
+      toast.error("Notifications not supported in this browser");
+      return;
+    }
+    setIsBusy(true);
+    try {
+      const perm = await Notification.requestPermission();
+      setPermission(perm);
+      if (perm !== "granted") {
+        toast.error(perm === "denied" ? "Notifications blocked — enable in browser settings" : "Permission not granted");
+        setIsBusy(false);
+        return;
+      }
+      if (!vapidKey) {
+        toast.error("Push not configured (VAPID key missing)");
+        setIsBusy(false);
+        return;
+      }
+      const reg = await navigator.serviceWorker.ready;
+      // ensure sw is registered
+      let swReg: ServiceWorkerRegistration | null = reg;
+      if (!swReg) {
+        swReg = await navigator.serviceWorker.register("/sw.js");
+        await navigator.serviceWorker.ready;
+      }
+      const existing = await swReg.pushManager.getSubscription();
+      if (existing) {
+        // already subscribed — sync to backend
+        const json = existing.toJSON() as { endpoint: string; keys?: { p256dh: string; auth: string } };
+        await fetch("/api/v1/push", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: json.endpoint, keys: json.keys }),
+        });
+        setIsSubscribed(true);
+        toast.success("Push notifications enabled");
+        setIsBusy(false);
+        return;
+      }
+      const sub = await swReg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey) as unknown as BufferSource,
+      });
+      const json = sub.toJSON() as { endpoint: string; keys?: { p256dh: string; auth: string } };
+      const res = await fetch("/api/v1/push", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ endpoint: json.endpoint, keys: json.keys }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => null);
+        throw new Error(j?.error ? JSON.stringify(j.error) : "Failed to save subscription");
+      }
+      setIsSubscribed(true);
+      toast.success("Push notifications enabled");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handleDisable = async () => {
+    setIsBusy(true);
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        const endpoint = sub.endpoint;
+        await sub.unsubscribe();
+        await fetch(`/api/v1/push?endpoint=${encodeURIComponent(endpoint)}`, { method: "DELETE" }).catch(() => {});
+      }
+      setIsSubscribed(false);
+      toast.success("Push notifications disabled");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handleTest = async () => {
+    try {
+      const res = await fetch("/api/v1/push/test", { method: "POST" });
+      if (res.ok) toast.success("Test notification sent");
+      else toast.error("Test failed");
+    } catch {
+      toast.error("Test failed");
+    }
+  };
+
+  if (isLoading) return <div className="h-10 animate-pulse rounded-xl bg-muted/40" />;
+
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-xl border p-4">
+      <div className="flex items-start gap-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl border bg-muted/50">
+          <Smartphone className="size-4" aria-hidden="true" />
+        </span>
+        <div className="space-y-0.5">
+          <h6 className="text-sm font-medium">Browser push notifications</h6>
+          <p className="text-xs text-muted-foreground">
+            {permission === "unsupported" ? "Not supported in this browser" : permission === "denied" ? "Blocked — enable in browser site settings" : isSubscribed ? "Enabled on this device" : "Allow notifications to get instant alerts"}
+          </p>
+          {permission === "default" && !vapidKey && <p className="text-xs text-amber-600">VAPID key not configured</p>}
+        </div>
+      </div>
+      <div className="flex gap-2">
+        {isSubscribed ? (
+          <>
+            <Button variant="outline" size="sm" className="cursor-pointer" disabled={isBusy} onClick={handleTest}>Test</Button>
+            <Button variant="outline" size="sm" className="cursor-pointer" disabled={isBusy} onClick={handleDisable}>{isBusy ? "..." : "Disable"}</Button>
+          </>
+        ) : (
+          <Button size="sm" className="cursor-pointer" disabled={isBusy || permission === "denied" || permission === "unsupported"} onClick={handleEnable}>{isBusy ? "..." : "Enable"}</Button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function SettingsPage() {
@@ -1176,6 +1334,7 @@ export default function SettingsPage() {
                               />
                             </div>
                           </div>
+                          <PushSubscriptionManager />
                           <Separator />
                           <div>
                             <h6 className="mb-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">

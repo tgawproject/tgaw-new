@@ -241,6 +241,9 @@ export default function UserManagementPage() {
   const [roleStep, setRoleStep] = useState<1 | 2>(1)
   const [selectedRole, setSelectedRole] = useState("")
   const [resendingId, setResendingId] = useState<string | null>(null)
+  const [coordinatorTimezones, setCoordinatorTimezones] = useState<string[]>([])
+  const [allTimezones, setAllTimezones] = useState<string[]>([])
+  const [tzFilter, setTzFilter] = useState("")
 
   const helper = createColumnHelper<typeof features, User>()
 
@@ -451,6 +454,41 @@ export default function UserManagementPage() {
     fetchUsers()
   }, [])
 
+  // Load full IANA timezone list once
+  useEffect(() => {
+    try {
+      const list = (Intl as unknown as { supportedValuesOf?: (k: string) => string[] }).supportedValuesOf?.("timeZone") ?? []
+      if (list.length > 0) setAllTimezones(list)
+      else setAllTimezones(["UTC","America/New_York","America/Chicago","America/Denver","America/Los_Angeles","Europe/London","Europe/Paris","Africa/Lagos","Asia/Dubai","Asia/Kolkata","Asia/Tokyo","Australia/Sydney"])
+    } catch {
+      setAllTimezones(["UTC"])
+    }
+  }, [])
+
+  // When opening role dialog for a coordinator, load existing assignments
+  useEffect(() => {
+    if (actionTarget !== "role" || !targetUser) {
+      setCoordinatorTimezones([])
+      setTzFilter("")
+      return
+    }
+    if (selectedRole !== "coordinator" && targetUser.role !== "coordinator") return
+    let cancelled = false
+    async function loadTz() {
+      try {
+        const res = await fetch(`/api/v1/admin/coordinator-assignments?userId=${targetUser!.id}`)
+        const data = await res.json()
+        if (!cancelled && data.success) {
+          setCoordinatorTimezones((data.data as { timezone: string }[]).map((r) => r.timezone))
+        }
+      } catch {
+        // ignore
+      }
+    }
+    loadTz()
+    return () => { cancelled = true }
+  }, [actionTarget, targetUser, selectedRole])
+
   async function setRole(userId: string, role: string) {
     setIsActing(true)
     const result = await authClient.admin.setRole({
@@ -460,19 +498,54 @@ export default function UserManagementPage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       role: role as any,
     })
-    if (!result.error) {
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, role } : u))
-      )
-      toast.success("Role updated")
-    } else {
+    if (result.error) {
       toast.error(result.error?.message || "Failed to update role")
+      setIsActing(false)
+      return
     }
+    // If coordinator, persist timezone assignments first; require at least one
+    if (role === "coordinator") {
+      if (coordinatorTimezones.length === 0) {
+        toast.error("Select at least one timezone for coordinators")
+        setIsActing(false)
+        return
+      }
+      try {
+        const res = await fetch("/api/v1/admin/coordinator-assignments", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, timezones: coordinatorTimezones }),
+        })
+        const data = await res.json()
+        if (!data.success) throw new Error(data.error || "Failed to save timezones")
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Failed to save timezones")
+        setIsActing(false)
+        return
+      }
+    } else {
+      // Clearing assignments when demoting from coordinator
+      try {
+        await fetch("/api/v1/admin/coordinator-assignments", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, timezones: [] }),
+        })
+      } catch {
+        // non-fatal
+      }
+    }
+    setUsers((prev) =>
+      prev.map((u) => (u.id === userId ? { ...u, role } : u))
+    )
+    toast.success("Role updated")
     setIsActing(false)
     setTargetUser(null)
     setActionTarget(null)
     setRoleStep(1)
     setSelectedRole("")
+    setCoordinatorTimezones([])
+    setTzFilter("")
   }
 
   async function banUser(userId: string, banReason: string) {
@@ -882,6 +955,57 @@ export default function UserManagementPage() {
                 value={selectedRole}
                 onChange={setSelectedRole}
               />
+              {selectedRole === "coordinator" && (
+                <div className="space-y-3 rounded-lg border p-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Assigned timezones</Label>
+                    <span className="text-xs text-muted-foreground">{coordinatorTimezones.length} selected</span>
+                  </div>
+                  {coordinatorTimezones.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {coordinatorTimezones.map((tz) => (
+                        <Badge key={tz} variant="secondary" className="gap-1 pr-1 text-xs">
+                          {tz}
+                          <button
+                            type="button"
+                            aria-label={`Remove ${tz}`}
+                            onClick={() => setCoordinatorTimezones((prev) => prev.filter((x) => x !== tz))}
+                            className="ml-1 cursor-pointer rounded-full p-0.5 hover:bg-muted"
+                          >
+                            <span aria-hidden="true">×</span>
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  <Input
+                    placeholder="Filter timezones… (e.g. Europe/Paris)"
+                    value={tzFilter}
+                    onChange={(e) => setTzFilter(e.target.value)}
+                    className="h-8"
+                  />
+                  <div className="max-h-40 overflow-auto rounded-md border">
+                    {(allTimezones.filter((tz) => tz.toLowerCase().includes(tzFilter.toLowerCase())).slice(0, 80)).map((tz) => {
+                      const active = coordinatorTimezones.includes(tz)
+                      return (
+                        <label key={tz} className="flex cursor-pointer items-center gap-2 px-2 py-1.5 text-sm hover:bg-muted/50">
+                          <Checkbox
+                            checked={active}
+                            onCheckedChange={(checked) => {
+                              setCoordinatorTimezones((prev) => checked ? [...prev, tz] : prev.filter((x) => x !== tz))
+                            }}
+                          />
+                          <span className="truncate">{tz}</span>
+                        </label>
+                      )
+                    })}
+                    {allTimezones.filter((tz) => tz.toLowerCase().includes(tzFilter.toLowerCase())).length === 0 && (
+                      <p className="p-3 text-sm text-muted-foreground">No matches.</p>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Coordinators see only these timezones in their dashboard. At least one is required.</p>
+                </div>
+              )}
               <DialogFooter>
                 <Button
                   variant="outline"
@@ -918,6 +1042,20 @@ export default function UserManagementPage() {
                   </span>
                   <RoleBadge role={selectedRole} />
                 </div>
+                {selectedRole === "coordinator" && (
+                  <div className="rounded-lg border p-3">
+                    <p className="text-sm font-medium">Timezones ({coordinatorTimezones.length})</p>
+                    {coordinatorTimezones.length === 0 ? (
+                      <p className="mt-1 text-sm text-destructive">No timezone selected — add at least one before saving.</p>
+                    ) : (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {coordinatorTimezones.map((tz) => (
+                          <Badge key={tz} variant="secondary" className="text-xs">{tz}</Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
                 {targetUser?.id === currentUserId && (
                   <p className="text-sm text-muted-foreground">
                     You&apos;re changing your own role. If you demote yourself,
