@@ -62,7 +62,7 @@ export function SlotBookingStrip({ slots, type, initialSlotId }: SlotBookingStri
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       <div className="flex justify-between items-center">
         <h3 className="font-semibold">Today&apos;s Slots</h3>
         <Button variant="link" asChild className="p-0 h-auto">
@@ -117,10 +117,10 @@ export function SlotBookingStrip({ slots, type, initialSlotId }: SlotBookingStri
                     }
                   }}
                   className={cn(
-                    "flex flex-col items-center justify-center rounded-lg border transition-all duration-200 shrink-0 select-none",
+                    "flex flex-col items-center justify-center rounded-lg border transition-all duration-200 shrink-0 select-none h-36",
                     past
-                      ? "w-20 h-14 opacity-40 cursor-default bg-muted/30 border-dashed"
-                      : "w-24 h-16 p-3 shadow-2xs cursor-pointer focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+                      ? "w-20 opacity-40 cursor-default bg-muted/30 border-dashed"
+                      : "w-24 p-3 shadow-2xs cursor-pointer focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
                     !past && blocked && cn("cursor-not-allowed", EVENT_BLOCK.tint, EVENT_BLOCK.border),
                     !past && isAvailable && accent.available,
                     !past && slot.isBooked && !slot.isOwnBooking && cn(accent.booked, "cursor-not-allowed opacity-80"),
@@ -164,9 +164,9 @@ export function SlotBookingStrip({ slots, type, initialSlotId }: SlotBookingStri
               );
 
               return (
-                <CarouselItem key={slot.id} className="basis-auto pl-2">
+                <CarouselItem key={slot.id} className="basis-auto pl-2 h-36">
                   {!past && blocked && slot.event ? (
-                    <EventBlockPopover event={slot.event}>{cell}</EventBlockPopover>
+                    <EventBlockPopover   event={slot.event}>{cell}</EventBlockPopover>
                   ) : (
                     cell
                   )}

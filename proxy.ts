@@ -29,6 +29,25 @@ const AUTH_PAGES = ["/login", "/signup", "/forgot-password", "/reset-password"];
 const ONBOARDING_PATH = "/onboarding";
 const BANNED_PATH = "/banned";
 
+// Cookie consent — Vary on GPC + geo so CDN caches per region correctly
+function withConsentHeaders(res: NextResponse, req: NextRequest): NextResponse {
+	const gpc = req.headers.get("sec-gpc") === "1" || req.headers.get("Sec-GPC") === "1";
+	const country =
+		req.headers.get("x-vercel-ip-country") ??
+		req.headers.get("cf-ipcountry") ??
+		req.headers.get("CF-IPCountry") ??
+		req.headers.get("x-country") ??
+		""
+	// Signal to client / CDN what was seen — no PII, just bucket hint
+	if (country) res.headers.set("x-tgaw-country", country.toUpperCase());
+	if (gpc) res.headers.set("x-tgaw-gpc", "1");
+	// Vary so caches don’t collapse consent variants
+	const vary = res.headers.get("Vary");
+	const needed = "Sec-GPC, X-Vercel-IP-Country, CF-IPCountry";
+	res.headers.set("Vary", vary ? `${vary}, ${needed}` : needed);
+	return res;
+}
+
 export async function proxy(req: NextRequest) {
 	const path = req.nextUrl.pathname;
 	const isProtected = PROTECTED_PATHS.some((p) => path.startsWith(p)) || path.startsWith("/api/v1/slots/");
@@ -41,15 +60,15 @@ export async function proxy(req: NextRequest) {
 	// Banned users are locked out of everything except the banned page
 	const isBanned = !!session && !!(session.user as { banned?: boolean }).banned;
 	if (isBanned && !isBannedPath) {
-		return NextResponse.redirect(new URL(BANNED_PATH, req.url));
+		return withConsentHeaders(NextResponse.redirect(new URL(BANNED_PATH, req.url)), req);
 	}
 	// /banned is public (banned users have no session), but signed-in
 	// non-banned users get bounced back to the dashboard.
 	if (isBannedPath && session && !isBanned) {
-		return NextResponse.redirect(new URL("/overview", req.url));
+		return withConsentHeaders(NextResponse.redirect(new URL("/overview", req.url)), req);
 	}
 	if (isBannedPath && !session) {
-		return NextResponse.next();
+		return withConsentHeaders(NextResponse.next(), req);
 	}
 
 	if (isAuthPage && session) {
@@ -58,15 +77,15 @@ export async function proxy(req: NextRequest) {
 			where: { userId: session.user.id! },
 		});
 		if (!profile) {
-			return NextResponse.redirect(new URL(ONBOARDING_PATH, req.url));
+			return withConsentHeaders(NextResponse.redirect(new URL(ONBOARDING_PATH, req.url)), req);
 		}
-		return NextResponse.redirect(new URL("/overview", req.url));
+		return withConsentHeaders(NextResponse.redirect(new URL("/overview", req.url)), req);
 	}
 
-	if (!isProtected && !isOnboardingPath) return NextResponse.next();
+	if (!isProtected && !isOnboardingPath) return withConsentHeaders(NextResponse.next(), req);
 
 	if (!session) {
-		return NextResponse.redirect(new URL("/login", req.url));
+		return withConsentHeaders(NextResponse.redirect(new URL("/login", req.url)), req);
 	}
 
 	// Onboarding guard — redirect to /setup if no UserProfile exists
@@ -74,17 +93,17 @@ export async function proxy(req: NextRequest) {
 		where: { userId: session.user.id! },
 	});
 	if (!profile && !isOnboardingPath) {
-		return NextResponse.redirect(new URL(ONBOARDING_PATH, req.url));
+		return withConsentHeaders(NextResponse.redirect(new URL(ONBOARDING_PATH, req.url)), req);
 	}
 	if (profile && isOnboardingPath) {
-		return NextResponse.redirect(new URL("/overview", req.url));
+		return withConsentHeaders(NextResponse.redirect(new URL("/overview", req.url)), req);
 	}
 
 	const role = (session.user.role as string) || "member";
 
 	// superadmin short-circuit (passes all RBAC checks)
 	if (role === "superadmin") {
-		return NextResponse.next();
+		return withConsentHeaders(NextResponse.next(), req);
 	}
 
 	if (path.startsWith("/api/v1/slots/book") || path.startsWith("/api/v1/slots/cancel") || path === "/api/v1/slots") {
@@ -92,29 +111,29 @@ export async function proxy(req: NextRequest) {
 	} else if (path.startsWith("/api/v1/slots/assign") || path.startsWith("/api/v1/slots/admin-cancel") || path.startsWith("/api/v1/slots/config") || path.startsWith("/api/v1/slots/meeting-link") || path.startsWith("/api/v1/slots/generate")) {
 		// Only leader and superadmin
 		if (role !== "leader" && role !== "superadmin") {
-			return NextResponse.redirect(new URL("/unauthorized", req.url));
+			return withConsentHeaders(NextResponse.redirect(new URL("/unauthorized", req.url)), req);
 		}
 	}
 
 	// User Management / Role Assignment: superadmin only
 	if (SUPERADMIN_ONLY_PATHS.some((p) => path.startsWith(p))) {
-		return NextResponse.redirect(new URL("/unauthorized", req.url));
+		return withConsentHeaders(NextResponse.redirect(new URL("/unauthorized", req.url)), req);
 	}
 
 	// Admin Portal (slot admin, reports, external links, etc.): leader + superadmin
 	if (ADMIN_PORTAL_PATHS.some((p) => path.startsWith(p)) && role !== "leader") {
-		return NextResponse.redirect(new URL("/unauthorized", req.url));
+		return withConsentHeaders(NextResponse.redirect(new URL("/unauthorized", req.url)), req);
 	}
 
 	// Coordinator Dashboard: coordinator + superadmin
 	if (COORDINATOR_PATHS.some((p) => path.startsWith(p)) && role !== "coordinator") {
-		return NextResponse.redirect(new URL("/unauthorized", req.url));
+		return withConsentHeaders(NextResponse.redirect(new URL("/unauthorized", req.url)), req);
 	}
 
 	// Board Dashboard: board + superadmin
 	if (BOARD_PATHS.some((p) => path.startsWith(p)) && role !== "board") {
-		return NextResponse.redirect(new URL("/unauthorized", req.url));
+		return withConsentHeaders(NextResponse.redirect(new URL("/unauthorized", req.url)), req);
 	}
 
-	return NextResponse.next();
+	return withConsentHeaders(NextResponse.next(), req);
 }

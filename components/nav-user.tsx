@@ -1,6 +1,6 @@
 "use client"
 
-import { Globe, LogOut, Settings, Video } from "lucide-react"
+import { Cookie, Globe, LogOut, Settings, Video } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { UserAvatar } from "@/components/UserAvatar"
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useSidebar } from "@/components/ui/sidebar"
 import { signOut, useSession } from "@/lib/auth-client"
+import { useConsent } from "@/components/consent/ConsentProvider"
 import { cn } from "@/lib/utils"
 
 interface ZoomSessionLink {
@@ -53,6 +54,7 @@ export function NavUser({ zoomLinks = DEFAULT_ZOOM_LINKS }: NavUserProps) {
   const { data: session } = useSession()
   const { isMobile } = useSidebar()
   const router = useRouter()
+  const { openCustomize } = useConsent()
 
   const user = session?.user
   const name = user?.name ?? "User"
@@ -136,6 +138,13 @@ export function NavUser({ zoomLinks = DEFAULT_ZOOM_LINKS }: NavUserProps) {
           >
             <Settings />
             Settings
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="cursor-pointer"
+            onClick={() => openCustomize()}
+          >
+            <Cookie />
+            Cookie Preferences
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

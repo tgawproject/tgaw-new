@@ -3,11 +3,14 @@
 
 import type { Metadata } from "next"
 import { Bebas_Neue, Geist, Geist_Mono } from "next/font/google"
+import { headers } from "next/headers"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Toaster } from "@/components/ui/sonner"
+import { ConsentProvider } from "@/components/consent/ConsentProvider"
+import { CookieConsent } from "@/components/consent"
 import { cn } from "@/lib/utils"
 
 export const metadata: Metadata = {
@@ -46,11 +49,26 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 })
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  // geo-adaptive: read edge country header for initial region bucket
+  let initialCountry: string | null = null
+  try {
+    const h = await headers()
+    initialCountry =
+      h.get("x-vercel-ip-country") ??
+      h.get("cf-ipcountry") ??
+      h.get("CF-IPCountry") ??
+      h.get("x-country") ??
+      null
+    if (initialCountry) initialCountry = initialCountry.toUpperCase()
+  } catch {
+    // ignore — client fallback will handle
+  }
+
   return (
     <html
       lang="en"
@@ -69,9 +87,18 @@ export default function RootLayout({
             __html: `<script>(function(){try{var t=localStorage.getItem("theme")||"system";var r=t==="system"?(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):t;var d=document.documentElement;d.classList.remove("light","dark");d.classList.add(r);d.style.colorScheme=r;}catch(e){}})();(function(){if(typeof window!=="undefined"&&window.performance&&typeof window.performance.measure==="function"){var orig=window.performance.measure.bind(window.performance);window.performance.measure=function(name,s,e){try{return orig(name,s,e);}catch(err){if(err&&(err.message||"").indexOf("negative")!==-1){return;}throw err;}};}})();</script>`,
           }}
         />
+        {/* Consent Mode v2 defaults must run before any analytics — inlined for priority */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){window.dataLayer.push(arguments)};window.gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',functionality_storage:'denied',personalization_storage:'denied',security_storage:'granted',wait_for_update:500});}catch(e){}})();`,
+          }}
+        />
         <ThemeProvider>
-          <TooltipProvider>{children}</TooltipProvider>
-          <Toaster />
+          <ConsentProvider initialCountry={initialCountry}>
+            <TooltipProvider>{children}</TooltipProvider>
+            <CookieConsent />
+            <Toaster />
+          </ConsentProvider>
         </ThemeProvider>
       </body>
     </html>
