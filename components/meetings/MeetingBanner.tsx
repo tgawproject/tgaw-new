@@ -54,7 +54,11 @@ interface MeetingBannerProps {
   initialSpecialEvents?: SpecialEventMeeting[]
 }
 
-export function MeetingBanner({ initialLinks, initialHosts, initialSpecialEvents }: MeetingBannerProps) {
+export function MeetingBanner({
+  initialLinks,
+  initialHosts,
+  initialSpecialEvents,
+}: MeetingBannerProps) {
   const specialEvents = initialSpecialEvents ?? []
   const [links, setLinks] = useState<MeetingLinks>(
     initialLinks ?? {
@@ -64,7 +68,12 @@ export function MeetingBanner({ initialLinks, initialHosts, initialSpecialEvents
     }
   )
   const [loaded, setLoaded] = useState(Boolean(initialLinks))
-  const [bookedStacks, setBookedStacks] = useState<Record<keyof MeetingLinks, { name: string; src?: string; fallback?: string }[]>>({
+  const [bookedStacks, setBookedStacks] = useState<
+    Record<
+      keyof MeetingLinks,
+      { name: string; src?: string; fallback?: string }[]
+    >
+  >({
     BIBLE: [],
     PRAYER: [],
     PRAISE_WORSHIP: [],
@@ -113,18 +122,31 @@ export function MeetingBanner({ initialLinks, initialHosts, initialSpecialEvents
         const res = await fetch(`/api/v1/slots?date=${today}`)
         const json = await res.json()
         if (!json.success || !json.data?.slots) return
-        const slots: { type: keyof MeetingLinks; bookedByName: string | null; bookedByImage: string | null; isBooked: boolean }[] = json.data.slots
-        const grouped: Record<keyof MeetingLinks, { name: string; src?: string; fallback?: string }[]> = { BIBLE: [], PRAYER: [], PRAISE_WORSHIP: [] }
+        const slots: {
+          type: keyof MeetingLinks
+          bookedByName: string | null
+          bookedByImage: string | null
+          isBooked: boolean
+        }[] = json.data.slots
+        const grouped: Record<
+          keyof MeetingLinks,
+          { name: string; src?: string; fallback?: string }[]
+        > = { BIBLE: [], PRAYER: [], PRAISE_WORSHIP: [] }
         const seen = new Set<string>()
         for (const s of slots) {
           if (!s.isBooked || !s.bookedByName) continue
           const key = `${s.type}-${s.bookedByName}`
           if (seen.has(key)) continue
           seen.add(key)
-          const item = { name: s.bookedByName, src: s.bookedByImage ?? undefined, fallback: s.bookedByName.slice(0, 2).toUpperCase() }
+          const item = {
+            name: s.bookedByName,
+            src: s.bookedByImage ?? undefined,
+            fallback: s.bookedByName.slice(0, 2).toUpperCase(),
+          }
           if (s.type === "BIBLE") grouped.BIBLE.push(item)
           else if (s.type === "PRAYER") grouped.PRAYER.push(item)
-          else if (s.type === "PRAISE_WORSHIP") grouped.PRAISE_WORSHIP.push(item)
+          else if (s.type === "PRAISE_WORSHIP")
+            grouped.PRAISE_WORSHIP.push(item)
         }
         if (!cancelled) setBookedStacks(grouped)
       } catch {
@@ -185,7 +207,6 @@ export function MeetingBanner({ initialLinks, initialHosts, initialSpecialEvents
         key={`special-${evt.id}`}
         className="flex flex-col justify-between border-violet-500/30 bg-card p-3 transition-shadow hover:shadow-sm"
       >
-      
         <CardContent className="p-0">
           <div className="flex items-start gap-2">
             <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-violet-500/15 text-violet-600 dark:text-violet-400">
@@ -238,14 +259,24 @@ export function MeetingBanner({ initialLinks, initialHosts, initialSpecialEvents
             Copy
           </Button>
           {hasUrl ? (
-            <Button variant="default" size="sm" asChild className="h-7 gap-1 text-[11px]">
+            <Button
+              variant="default"
+              size="sm"
+              asChild
+              className="h-7 gap-1 text-[11px]"
+            >
               <a href={evt.zoomUrl!} target="_blank" rel="noreferrer noopener">
                 Join
                 <ExternalLink className="size-3" aria-hidden="true" />
               </a>
             </Button>
           ) : (
-            <Button variant="secondary" size="sm" disabled className="h-7 text-[11px]">
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled
+              className="h-7 text-[11px]"
+            >
               Not Scheduled
             </Button>
           )}
@@ -304,8 +335,6 @@ export function MeetingBanner({ initialLinks, initialHosts, initialSpecialEvents
             key={section.key}
             className="flex flex-col justify-between border-border bg-card p-3 transition-shadow hover:shadow-sm"
           >
-
-            
             <CardContent className="p-0">
               <div className="flex items-start gap-2">
                 <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
@@ -334,9 +363,19 @@ export function MeetingBanner({ initialLinks, initialHosts, initialSpecialEvents
                     Host: {section.host ?? "—"}
                   </p>
                   {bookedStacks[section.key].length > 0 && (
-                    <div className="mt-2 flex items-center gap-1.5">
-                      <AvatarStack avatars={bookedStacks[section.key]} max={4} className="[&_[data-slot=avatar]]:size-6 [&_[data-slot=avatar-group-count]]:size-6 [&_[data-slot=avatar-group-count]]:text-[10px]" />
-                      <span className="text-[11px] text-muted-foreground">{bookedStacks[section.key].length} booked</span>
+                    <div className="mt-2 flex w-fit flex-wrap items-center justify-start rounded-full border bg-background p-1">
+                      <AvatarStack
+                        avatars={bookedStacks[section.key]}
+                        max={3}
+                        className="[&_[data-slot=avatar-group-count]]:size-6 [&_[data-slot=avatar-group-count]]:text-[10px] [&_[data-slot=avatar]]:size-6"
+                      />
+                      <p className="px-2 text-xs text-muted-foreground">
+                        Booked by{" "}
+                        <strong className="font-medium text-foreground">
+                          {bookedStacks[section.key].length}
+                        </strong>{" "}
+                        today
+                      </p>
                     </div>
                   )}
                 </div>
@@ -361,11 +400,7 @@ export function MeetingBanner({ initialLinks, initialHosts, initialSpecialEvents
                   asChild
                   className="h-7 gap-1 text-[11px]"
                 >
-                  <a
-                    href={link.url!}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                  >
+                  <a href={link.url!} target="_blank" rel="noreferrer noopener">
                     Join
                     <ExternalLink className="size-3" aria-hidden="true" />
                   </a>
@@ -385,7 +420,6 @@ export function MeetingBanner({ initialLinks, initialHosts, initialSpecialEvents
         )
       })}
 
-      
       {specialCards}
     </div>
   )
