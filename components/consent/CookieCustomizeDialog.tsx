@@ -36,7 +36,7 @@ export function CookieCustomizeDialog() {
 
   return (
     <Dialog open={showCustomize} onOpenChange={(open) => { if (!open) closeCustomize() }}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[520px]">
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[520px] lg:!left-auto lg:!right-6 lg:!top-1/2 lg:!translate-x-0 lg:!-translate-y-1/2 lg:!mx-0">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Cookie aria-hidden="true" className="size-4 text-muted-foreground" />

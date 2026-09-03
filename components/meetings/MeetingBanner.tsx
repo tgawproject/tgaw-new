@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
 import { convertUtcTimeToLocal } from "@/components/booking/slotTime"
 import { cn } from "@/lib/utils"
+import { AvatarStack } from "@/components/shadcn-space/avatar/avatar-08"
 
 type MeetingLink = {
   url: string | null
@@ -63,6 +64,11 @@ export function MeetingBanner({ initialLinks, initialHosts, initialSpecialEvents
     }
   )
   const [loaded, setLoaded] = useState(Boolean(initialLinks))
+  const [bookedStacks, setBookedStacks] = useState<Record<keyof MeetingLinks, { name: string; src?: string; fallback?: string }[]>>({
+    BIBLE: [],
+    PRAYER: [],
+    PRAISE_WORSHIP: [],
+  })
 
   useEffect(() => {
     let isMounted = true
@@ -99,6 +105,40 @@ export function MeetingBanner({ initialLinks, initialHosts, initialSpecialEvents
     }
   }, [initialLinks])
 
+  useEffect(() => {
+    let cancelled = false
+    async function fetchBooked() {
+      try {
+        const today = new Date().toISOString().split("T")[0]
+        const res = await fetch(`/api/v1/slots?date=${today}`)
+        const json = await res.json()
+        if (!json.success || !json.data?.slots) return
+        const slots: { type: keyof MeetingLinks; bookedByName: string | null; bookedByImage: string | null; isBooked: boolean }[] = json.data.slots
+        const grouped: Record<keyof MeetingLinks, { name: string; src?: string; fallback?: string }[]> = { BIBLE: [], PRAYER: [], PRAISE_WORSHIP: [] }
+        const seen = new Set<string>()
+        for (const s of slots) {
+          if (!s.isBooked || !s.bookedByName) continue
+          const key = `${s.type}-${s.bookedByName}`
+          if (seen.has(key)) continue
+          seen.add(key)
+          const item = { name: s.bookedByName, src: s.bookedByImage ?? undefined, fallback: s.bookedByName.slice(0, 2).toUpperCase() }
+          if (s.type === "BIBLE") grouped.BIBLE.push(item)
+          else if (s.type === "PRAYER") grouped.PRAYER.push(item)
+          else if (s.type === "PRAISE_WORSHIP") grouped.PRAISE_WORSHIP.push(item)
+        }
+        if (!cancelled) setBookedStacks(grouped)
+      } catch {
+        // ignore
+      }
+    }
+    fetchBooked()
+    const id = setInterval(fetchBooked, 60000)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [])
+
   const extractMeetingId = (url: string | null) => {
     if (!url) return "—"
     try {
@@ -134,7 +174,7 @@ export function MeetingBanner({ initialLinks, initialHosts, initialSpecialEvents
 
   const hasSpecial = specialEvents.length > 0
   const gridClassName = cn(
-    "grid grid-cols-1 gap-4",
+    "grid grid-cols-1 gap-3",
     hasSpecial ? "sm:grid-cols-2 lg:grid-cols-4" : "md:grid-cols-3"
   )
 
@@ -143,17 +183,17 @@ export function MeetingBanner({ initialLinks, initialHosts, initialSpecialEvents
     return (
       <Card
         key={`special-${evt.id}`}
-        className="flex flex-col justify-between border-violet-500/30 bg-card p-4 transition-shadow hover:shadow-sm"
+        className="flex flex-col justify-between border-violet-500/30 bg-card p-3 transition-shadow hover:shadow-sm"
       >
       
         <CardContent className="p-0">
-          <div className="flex items-start gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-600 dark:text-violet-400">
-              <Sparkles className="size-5" aria-hidden="true" />
+          <div className="flex items-start gap-2">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-violet-500/15 text-violet-600 dark:text-violet-400">
+              <Sparkles className="size-4" aria-hidden="true" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <h4 className="truncate text-sm font-semibold text-foreground">
+              <div className="flex items-center gap-1.5">
+                <h4 className="truncate text-xs font-semibold text-foreground">
                   {evt.title}
                 </h4>
                 <Badge
@@ -171,7 +211,7 @@ export function MeetingBanner({ initialLinks, initialHosts, initialSpecialEvents
                   </Badge>
                 )}
               </div>
-              <p className="mt-1 truncate text-xs text-muted-foreground">
+              <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
                 {formatSpecialDate(evt.date)}
                 <span className="mx-1">&middot;</span>
                 <span className="tabular-nums">
@@ -179,33 +219,33 @@ export function MeetingBanner({ initialLinks, initialHosts, initialSpecialEvents
                   {convertUtcTimeToLocal(evt.endTime)}
                 </span>
               </p>
-              <p className="mt-0.5 truncate text-xs text-muted-foreground">
+              <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
                 Host: {evt.hostName ?? "—"}
               </p>
             </div>
           </div>
         </CardContent>
 
-        <div className="mt-4 flex items-center justify-between gap-2 border-t border-border/60 pt-3">
+        <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-border/60 pt-2.5">
           <Button
             variant="outline"
             size="sm"
-            className="h-8 gap-1.5 text-xs"
+            className="h-7 gap-1 text-[11px]"
             disabled={!hasUrl}
             onClick={() => handleCopyLink(evt.zoomUrl, evt.title)}
           >
-            <Copy className="size-3.5" aria-hidden="true" />
-            Copy Link
+            <Copy className="size-3" aria-hidden="true" />
+            Copy
           </Button>
           {hasUrl ? (
-            <Button variant="default" size="sm" asChild className="h-8 gap-1.5 text-xs">
+            <Button variant="default" size="sm" asChild className="h-7 gap-1 text-[11px]">
               <a href={evt.zoomUrl!} target="_blank" rel="noreferrer noopener">
-                Join Now
-                <ExternalLink className="size-3.5" aria-hidden="true" />
+                Join
+                <ExternalLink className="size-3" aria-hidden="true" />
               </a>
             </Button>
           ) : (
-            <Button variant="secondary" size="sm" disabled className="h-8 text-xs">
+            <Button variant="secondary" size="sm" disabled className="h-7 text-[11px]">
               Not Scheduled
             </Button>
           )}
@@ -217,9 +257,9 @@ export function MeetingBanner({ initialLinks, initialHosts, initialSpecialEvents
   if (!loaded) {
     return (
       <div className={gridClassName}>
-        <Skeleton className="h-36 rounded-xl" />
-        <Skeleton className="h-36 rounded-xl" />
-        <Skeleton className="h-36 rounded-xl" />
+        <Skeleton className="h-28 rounded-xl" />
+        <Skeleton className="h-28 rounded-xl" />
+        <Skeleton className="h-28 rounded-xl" />
         {specialCards}
       </div>
     )
@@ -262,18 +302,18 @@ export function MeetingBanner({ initialLinks, initialHosts, initialSpecialEvents
         return (
           <Card
             key={section.key}
-            className="flex flex-col justify-between border-border bg-card p-4 transition-shadow hover:shadow-sm"
+            className="flex flex-col justify-between border-border bg-card p-3 transition-shadow hover:shadow-sm"
           >
 
             
             <CardContent className="p-0">
-              <div className="flex items-start gap-3">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Video className="size-5" aria-hidden="true" />
+              <div className="flex items-start gap-2">
+                <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                  <Video className="size-4" aria-hidden="true" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <h4 className="truncate text-sm font-semibold text-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <h4 className="truncate text-xs font-semibold text-foreground">
                       {section.title}
                     </h4>
                     {isLive && (
@@ -285,43 +325,49 @@ export function MeetingBanner({ initialLinks, initialHosts, initialSpecialEvents
                       </Badge>
                     )}
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    <span>Meeting ID: {meetingId}</span>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    <span>ID: {meetingId}</span>
                     <span className="mx-1">&middot;</span>
-                    <span>Passcode: {section.passcode}</span>
+                    <span>Code: {section.passcode}</span>
                   </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground truncate">
+                  <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
                     Host: {section.host ?? "—"}
                   </p>
+                  {bookedStacks[section.key].length > 0 && (
+                    <div className="mt-2 flex items-center gap-1.5">
+                      <AvatarStack avatars={bookedStacks[section.key]} max={4} className="[&_[data-slot=avatar]]:size-6 [&_[data-slot=avatar-group-count]]:size-6 [&_[data-slot=avatar-group-count]]:text-[10px]" />
+                      <span className="text-[11px] text-muted-foreground">{bookedStacks[section.key].length} booked</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
 
-            <div className="mt-4 flex items-center justify-between gap-2 border-t border-border/60 pt-3">
+            <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-border/60 pt-2.5">
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 gap-1.5 text-xs"
+                className="h-7 gap-1 text-[11px]"
                 disabled={!hasUrl}
                 onClick={() => handleCopyLink(link.url, section.title)}
               >
-                <Copy className="size-3.5" aria-hidden="true" />
-                Copy Link
+                <Copy className="size-3" aria-hidden="true" />
+                Copy
               </Button>
               {hasUrl ? (
                 <Button
                   variant="default"
                   size="sm"
                   asChild
-                  className="h-8 gap-1.5 text-xs"
+                  className="h-7 gap-1 text-[11px]"
                 >
                   <a
                     href={link.url!}
                     target="_blank"
                     rel="noreferrer noopener"
                   >
-                    Join Now
-                    <ExternalLink className="size-3.5" aria-hidden="true" />
+                    Join
+                    <ExternalLink className="size-3" aria-hidden="true" />
                   </a>
                 </Button>
               ) : (
@@ -329,7 +375,7 @@ export function MeetingBanner({ initialLinks, initialHosts, initialSpecialEvents
                   variant="secondary"
                   size="sm"
                   disabled
-                  className="h-8 text-xs"
+                  className="h-7 text-[11px]"
                 >
                   Not Scheduled
                 </Button>

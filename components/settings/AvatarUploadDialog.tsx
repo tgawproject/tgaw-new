@@ -291,7 +291,7 @@ export function AvatarUploadDialog({
 					</div>
 				</div>
 
-				<DialogFooter className="flex flex-col-reverse gap-3 border-t bg-muted/10 px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+				<DialogFooter className="!mx-0 !mb-0 flex flex-col-reverse gap-3 rounded-b-3xl border-t bg-muted/10 px-6 py-6 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
 					<div>
 						{currentImage && !previewUrl && (
 							<Button
