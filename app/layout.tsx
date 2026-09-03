@@ -5,6 +5,8 @@ import type { Metadata } from "next"
 import { Bebas_Neue, Geist, Geist_Mono } from "next/font/google"
 import { headers } from "next/headers"
 
+import Script from "next/script"
+
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -89,7 +91,9 @@ export default async function RootLayout({
           }}
         />
         {/* Consent Mode v2 defaults must run before any analytics — inlined for priority */}
-        <script
+        <Script
+          id="consent-defaults"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `(function(){try{window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){window.dataLayer.push(arguments)};window.gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',functionality_storage:'denied',personalization_storage:'denied',security_storage:'granted',wait_for_update:500});}catch(e){}})();`,
           }}

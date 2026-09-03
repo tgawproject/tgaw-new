@@ -60,7 +60,7 @@ function Avatar({ initials, name }: { initials: string; name?: string }) {
     <span
       data-slot="avatar"
       title={name}
-      className="inline-flex shrink-0 select-none items-center justify-center overflow-hidden rounded-full bg-background align-middle font-medium text-xs size-6 border-2 border-background"
+      className="inline-flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-background bg-background align-middle text-xs font-medium select-none"
     >
       <span
         data-slot="avatar-fallback"
@@ -88,10 +88,13 @@ export function AgendaView({ days, summary }: AgendaViewProps) {
 
   if (!hasEvents) {
     return (
-      <Card className="h-full">
+      <Card className="h-auto">
         <CardContent className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
           <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-            <CalendarCheck2 className="size-6 text-muted-foreground" aria-hidden="true" />
+            <CalendarCheck2
+              className="size-6 text-muted-foreground"
+              aria-hidden="true"
+            />
           </div>
           <p className="text-sm font-medium">No sessions booked yet</p>
           <p className="max-w-xs text-sm text-muted-foreground">
@@ -111,13 +114,15 @@ export function AgendaView({ days, summary }: AgendaViewProps) {
     <div>
       <div className="flex items-end justify-between gap-4">
         <div>
-          <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-[0.3em]">
+          <div className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground uppercase">
             {eyebrowDate} &middot; My Agenda
           </div>
-          <h1 className="mt-1 font-heading text-3xl tracking-tight">{heading}</h1>
+          <h1 className="font-heading mt-1 text-3xl tracking-tight">
+            {heading}
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {summary.eventCount} event{summary.eventCount === 1 ? "" : "s"} &middot;{" "}
-            {formatDuration(summary.bookedMin)} booked &middot;{" "}
+            {summary.eventCount} event{summary.eventCount === 1 ? "" : "s"}{" "}
+            &middot; {formatDuration(summary.bookedMin)} booked &middot;{" "}
             {formatDuration(summary.focusMin)} focus time.
           </p>
         </div>
@@ -131,10 +136,10 @@ export function AgendaView({ days, summary }: AgendaViewProps) {
       {days.map((day) => (
         <section key={day.key} className="mt-8">
           <div className="mb-2 flex items-end justify-between">
-            <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-[0.25em]">
+            <span className="font-mono text-[10px] tracking-[0.25em] text-muted-foreground uppercase">
               {day.label}
             </span>
-            <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-[0.25em]">
+            <span className="font-mono text-[10px] tracking-[0.25em] text-muted-foreground uppercase">
               {day.dateLabel}
             </span>
           </div>
@@ -145,12 +150,19 @@ export function AgendaView({ days, summary }: AgendaViewProps) {
                 className="grid grid-cols-[80px_1fr] gap-3 rounded-xl border border-border/60 bg-background/40 px-3 py-3 transition-colors hover:bg-background/60"
               >
                 <div className="font-mono text-[11px]">
-                  <div className="text-foreground">{convertUtcTimeToLocal(evt.startTime)}</div>
-                  <div className="text-muted-foreground">{convertUtcTimeToLocal(evt.endTime)}</div>
+                  <div className="text-foreground">
+                    {convertUtcTimeToLocal(evt.startTime)}
+                  </div>
+                  <div className="text-muted-foreground">
+                    {convertUtcTimeToLocal(evt.endTime)}
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <span
-                    className={cn("h-12 w-1 shrink-0 rounded-full", typeBarFor(evt.type))}
+                    className={cn(
+                      "h-12 w-1 shrink-0 rounded-full",
+                      typeBarFor(evt.type)
+                    )}
                     aria-hidden="true"
                   />
                   <div className="min-w-0 flex-1">
@@ -162,12 +174,17 @@ export function AgendaView({ days, summary }: AgendaViewProps) {
                       </div>
                     )}
                     {evt.note && (
-                      <div className="mt-1 text-xs text-muted-foreground">{evt.note}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {evt.note}
+                      </div>
                     )}
                   </div>
                   {evt.leaderInitials && (
                     <div className="flex items-center -space-x-1.5">
-                      <Avatar initials={evt.leaderInitials} name={evt.leaderName ?? undefined} />
+                      <Avatar
+                        initials={evt.leaderInitials}
+                        name={evt.leaderName ?? undefined}
+                      />
                     </div>
                   )}
                 </div>

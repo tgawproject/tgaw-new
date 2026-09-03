@@ -1,8 +1,18 @@
 "use client"
 
-import { Cookie, Globe, LogOut, Settings, Video } from "lucide-react"
+import {
+  Book,
+  Church,
+  Cookie,
+  Globe,
+  LogOut,
+  Music,
+  Settings,
+  Video,
+} from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 import { UserAvatar } from "@/components/UserAvatar"
 import {
   DropdownMenu,
@@ -30,13 +40,13 @@ const DEFAULT_ZOOM_LINKS: ZoomSessionLink[] = [
     id: "bible",
     label: "Bible Reading",
     url: "https://zoom.us/j/89234156701",
-    isActive: true,
+    isActive: false,
   },
   {
     id: "prayer",
     label: "Morning Intercession",
     url: "https://zoom.us/j/89234156702",
-    isActive: true,
+    isActive: false,
   },
   {
     id: "worship",
@@ -46,15 +56,125 @@ const DEFAULT_ZOOM_LINKS: ZoomSessionLink[] = [
   },
 ]
 
+const CHANNEL_META: Record<
+  string,
+  { icon: typeof Book; tint: string; dot: string }
+> = {
+  bible: {
+    icon: Book,
+    tint: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
+    dot: "bg-purple-500",
+  },
+  prayer: {
+    icon: Church,
+    tint: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
+    dot: "bg-red-500",
+  },
+  worship: {
+    icon: Music,
+    tint: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+    dot: "bg-amber-500",
+  },
+}
+
+function isCurrentSlot(slot: { startTime: string; endTime: string }): boolean {
+  const now = new Date()
+  const toMin = (t: string) => {
+    const [h, m] = t.split(":").map(Number)
+    return h * 60 + m
+  }
+  const nowMin = now.getUTCHours() * 60 + now.getUTCMinutes()
+  return (
+    toMin(slot.startTime) <= nowMin &&
+    nowMin < toMin(slot.endTime === "24:00" ? "24:00" : slot.endTime)
+  )
+}
+
 interface NavUserProps {
   zoomLinks?: ZoomSessionLink[]
 }
 
-export function NavUser({ zoomLinks = DEFAULT_ZOOM_LINKS }: NavUserProps) {
+export function NavUser({
+  zoomLinks: initialLinks = DEFAULT_ZOOM_LINKS,
+}: NavUserProps) {
   const { data: session } = useSession()
   const { isMobile } = useSidebar()
   const router = useRouter()
   const { openCustomize } = useConsent()
+  const [zoomLinks, setZoomLinks] = useState<ZoomSessionLink[]>(initialLinks)
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadLive() {
+      try {
+        const today = new Date().toISOString().split("T")[0]
+        const res = await fetch(`/api/v1/slots?date=${today}`)
+        if (!res.ok) return
+        const json = await res.json()
+        if (!json.success || !json.data?.slots) return
+        const slots: {
+          type: string
+          startTime: string
+          endTime: string
+          date: string
+        }[] = json.data.slots
+        const linksMap: Record<string, { url: string; label?: string | null }> =
+          {}
+        const ml = json.data.meetingLinks as
+          | Record<string, { url: string; label?: string | null } | null>
+          | undefined
+        if (ml) {
+          if (ml.BIBLE?.url)
+            linksMap.bible = { url: ml.BIBLE.url, label: ml.BIBLE.label }
+          if (ml.PRAYER?.url)
+            linksMap.prayer = { url: ml.PRAYER.url, label: ml.PRAYER.label }
+          if (ml.PRAISE_WORSHIP?.url)
+            linksMap.worship = {
+              url: ml.PRAISE_WORSHIP.url,
+              label: ml.PRAISE_WORSHIP.label,
+            }
+        }
+        const byType: Record<string, typeof slots> = {
+          bible: [],
+          prayer: [],
+          worship: [],
+        }
+        for (const s of slots) {
+          const key =
+            s.type === "BIBLE"
+              ? "bible"
+              : s.type === "PRAYER"
+                ? "prayer"
+                : "worship"
+          byType[key].push(s)
+        }
+        if (cancelled) return
+        setZoomLinks((prev) =>
+          prev.map((link) => {
+            const typeSlots = byType[link.id] ?? []
+            const live = typeSlots.some((s) => isCurrentSlot(s))
+            const realUrl = linksMap[link.id]?.url
+            return {
+              ...link,
+              isActive: live,
+              url: realUrl || link.url,
+              label: linksMap[link.id]?.label
+                ? `${link.label} · ${linksMap[link.id]!.label}`
+                : link.label,
+            }
+          })
+        )
+      } catch {
+        // keep defaults
+      }
+    }
+    loadLive()
+    const id = setInterval(loadLive, 60000)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [])
 
   const user = session?.user
   const name = user?.name ?? "User"
@@ -80,7 +200,11 @@ export function NavUser({ zoomLinks = DEFAULT_ZOOM_LINKS }: NavUserProps) {
         <DropdownMenuGroup>
           <DropdownMenuLabel className="p-0 font-normal">
             <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-              <UserAvatar name={user?.name} image={user?.image} className="size-8" />
+              <UserAvatar
+                name={user?.name}
+                image={user?.image}
+                className="size-8"
+              />
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{name}</span>
                 <span className="flex items-center gap-1.5 text-xs">
@@ -96,38 +220,67 @@ export function NavUser({ zoomLinks = DEFAULT_ZOOM_LINKS }: NavUserProps) {
         <DropdownMenuSeparator />
         {zoomLinks.length > 0 && (
           <DropdownMenuGroup>
-            <DropdownMenuLabel className="uppercase tracking-wide">
+            <DropdownMenuLabel className="tracking-wide uppercase">
               Live Meetings
             </DropdownMenuLabel>
-            {zoomLinks.map((link) => (
-              <DropdownMenuItem
-                key={link.id}
-                className={cn(
-                  "cursor-pointer",
-                  link.isActive && "bg-emerald-500/5"
-                )}
-                render={
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="cursor-pointer"
-                  />
-                }
-              >
-                <Video className="size-4" aria-hidden="true" />
-                {link.isActive && (
+            {zoomLinks.map((link) => {
+              const meta = CHANNEL_META[link.id]
+              const Icon = meta?.icon ?? Video
+              const activeTint = meta?.dot ?? "bg-emerald-500"
+              return (
+                <DropdownMenuItem
+                  key={link.id}
+                  className={cn(
+                    "cursor-pointer gap-2",
+                    link.isActive && "bg-emerald-500/5"
+                  )}
+                  render={
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="cursor-pointer"
+                    />
+                  }
+                >
                   <span
-                    className="relative flex size-2"
-                    aria-hidden="true"
+                    className={cn(
+                      "flex size-6 shrink-0 items-center justify-center rounded-md border text-[10px]",
+                      meta?.tint ?? "bg-muted"
+                    )}
                   >
-                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500 opacity-75" />
-                    <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+                    <Icon className="size-3" aria-hidden="true" />
                   </span>
-                )}
-                {link.label}
-              </DropdownMenuItem>
-            ))}
+                  <span className="flex-1 truncate text-sm">{link.label}</span>
+                  {link.isActive ? (
+                    <span className="ml-auto inline-flex items-center gap-1.5">
+                      <span className="hidden text-[10px] font-medium text-emerald-700 sm:inline dark:text-emerald-400">
+                        Live
+                      </span>
+                      <span className="relative flex size-2" aria-hidden="true">
+                        <span
+                          className={cn(
+                            "absolute inline-flex size-full animate-ping rounded-full opacity-75",
+                            activeTint
+                          )}
+                        />
+                        <span
+                          className={cn(
+                            "relative inline-flex size-2 rounded-full",
+                            activeTint
+                          )}
+                        />
+                      </span>
+                    </span>
+                  ) : (
+                    <Video
+                      className="ml-auto size-3 shrink-0 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                  )}
+                </DropdownMenuItem>
+              )
+            })}
           </DropdownMenuGroup>
         )}
         <DropdownMenuSeparator />
@@ -137,7 +290,7 @@ export function NavUser({ zoomLinks = DEFAULT_ZOOM_LINKS }: NavUserProps) {
             onClick={() => router.push("/settings")}
           >
             <Settings />
-            Settings
+            My Settings
           </DropdownMenuItem>
           <DropdownMenuItem
             className="cursor-pointer"

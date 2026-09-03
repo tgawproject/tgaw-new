@@ -15,7 +15,11 @@ import {
   type AgendaSummary,
 } from "@/components/booking/AgendaView"
 import { VerseCard } from "@/components/verse/VerseCard"
-import { MeetingBanner, type SpecialEventMeeting } from "@/components/meetings/MeetingBanner"
+import {
+  MeetingBanner,
+  type SpecialEventMeeting,
+} from "@/components/meetings/MeetingBanner"
+import { OverviewLiveGrid } from "@/components/booking/OverviewLiveGrid"
 import {
   getActiveSlotHosts,
   getBookingConfig,
@@ -132,12 +136,16 @@ export default async function OverviewPage() {
     [...new Set(mySlots.map((slot) => slot.date))]
       .filter((date) => date > today)
       .sort()[0] ?? null
-  const nextSlots = nextDate ? mySlots.filter((slot) => slot.date === nextDate) : []
+  const nextSlots = nextDate
+    ? mySlots.filter((slot) => slot.date === nextDate)
+    : []
 
   const todayBlocks = mergeBlocks(todaySlots)
   const nextBlocks = nextDate ? mergeBlocks(nextSlots) : []
 
-  const linkDates = [...new Set([today, nextDate].filter((d): d is string => !!d))]
+  const linkDates = [
+    ...new Set([today, nextDate].filter((d): d is string => !!d)),
+  ]
   const links = await prisma.meetingLink.findMany({
     where: {
       OR: [{ date: { in: linkDates } }, { date: "DEFAULT" }],
@@ -166,18 +174,25 @@ export default async function OverviewPage() {
       take: 10,
     })
   )
-    .map((event) => ({ event, endTime: eventEndTime(event.time, event.duration) }))
+    .map((event) => ({
+      event,
+      endTime: eventEndTime(event.time, event.duration),
+    }))
     .filter(({ event, endTime }) => utcDateTime(event.date, endTime) > now)
     .slice(0, 3)
 
-  const specialHostIds = [...new Set(specialCandidates.map(({ event }) => event.userId))]
+  const specialHostIds = [
+    ...new Set(specialCandidates.map(({ event }) => event.userId)),
+  ]
   const specialHostUsers = specialHostIds.length
     ? await prisma.user.findMany({
         where: { id: { in: specialHostIds } },
         select: { id: true, name: true },
       })
     : []
-  const specialHostNameMap = new Map(specialHostUsers.map((u) => [u.id, u.name]))
+  const specialHostNameMap = new Map(
+    specialHostUsers.map((u) => [u.id, u.name])
+  )
 
   const specialEvents: SpecialEventMeeting[] = specialCandidates.map(
     ({ event, endTime }) => ({
@@ -200,7 +215,9 @@ export default async function OverviewPage() {
         links.find((l) => l.type === block.type && l.date === date) ??
         links.find((l) => l.type === block.type && l.date === "DEFAULT") ??
         null
-      const leader = link ? leaders.find((u) => u.id === link.createdBy) : undefined
+      const leader = link
+        ? leaders.find((u) => u.id === link.createdBy)
+        : undefined
       return {
         id: block.id,
         type: block.type,
@@ -211,7 +228,7 @@ export default async function OverviewPage() {
         hasLink: !!link,
         locationText: link ? `Zoom · ${link.label ?? "Meeting"}` : null,
         leaderInitials: leader
-          ? leader.initials ?? deriveInitials(leader.name ?? undefined)
+          ? (leader.initials ?? deriveInitials(leader.name ?? undefined))
           : null,
         leaderName: leader?.name ?? null,
       }
@@ -285,13 +302,13 @@ export default async function OverviewPage() {
           )}
         </p>
       </div>
-      <VerseCard />
-      <MeetingBanner initialHosts={activeHosts} initialSpecialEvents={specialEvents} />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Sessions Today"
           value={sessionCount}
-          description={sessionCount > 0 ? "On today's watch" : "Nothing booked yet"}
+          description={
+            sessionCount > 0 ? "On today's watch" : "Nothing booked yet"
+          }
           icon={CalendarDays}
           className="border-l-4 border-l-blue-500"
         />
@@ -318,9 +335,29 @@ export default async function OverviewPage() {
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <AgendaView days={days} summary={summary} />
+      <VerseCard />
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="sm:col-span-1 lg:col-span-1">
+          <AgendaView days={days} summary={summary} />
+        </div>
+        <div className="sm:col-span-1 lg:col-span-2">
+          <OverviewLiveGrid
+            upcoming={
+              (bookingConfig as { liveGridUpcoming?: number })
+                .liveGridUpcoming ?? 2
+            }
+          />
+        </div>
+        <div className="lg:col-span-1">
+          <CommunityActivity />
+        </div>
+      </div>
+      <MeetingBanner
+        initialHosts={activeHosts}
+        initialSpecialEvents={specialEvents}
+      />
 
+      <div className="grid hidden gap-6 lg:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -331,8 +368,16 @@ export default async function OverviewPage() {
           <CardContent className="flex flex-col gap-3">
             {(
               [
-                { type: "BIBLE", cap: bookingConfig.maxBibleSlotsPerDay, bar: "bg-purple-500" },
-                { type: "PRAYER", cap: bookingConfig.maxPrayerSlotsPerDay, bar: "bg-red-500" },
+                {
+                  type: "BIBLE",
+                  cap: bookingConfig.maxBibleSlotsPerDay,
+                  bar: "bg-purple-500",
+                },
+                {
+                  type: "PRAYER",
+                  cap: bookingConfig.maxPrayerSlotsPerDay,
+                  bar: "bg-red-500",
+                },
                 {
                   type: "PRAISE_WORSHIP",
                   cap: bookingConfig.maxWorshipSlotsPerDay,
@@ -342,7 +387,10 @@ export default async function OverviewPage() {
             ).map(({ type, cap, bar }) => {
               const capacity = cap * 7
               const booked = stats?.weekByType[type] ?? 0
-              const percent = capacity > 0 ? Math.min(100, Math.round((booked / capacity) * 100)) : 0
+              const percent =
+                capacity > 0
+                  ? Math.min(100, Math.round((booked / capacity) * 100))
+                  : 0
               return (
                 <div key={type}>
                   <div className="flex items-center justify-between text-sm">
@@ -362,16 +410,7 @@ export default async function OverviewPage() {
             })}
           </CardContent>
         </Card>
-        <div className="lg:col-span-1">
-          <CommunityActivity />
-        </div>
       </div>
-
-      {/* <div className="grid gap-6 lg:grid-cols-4">
-        <div className="lg:col-span-3">
-          <UpcomingBookings bookings={upcomingBookings} />
-        </div>
-      </div> */}
     </div>
   )
 }

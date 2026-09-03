@@ -112,6 +112,7 @@ export async function updateBookingConfig(
     maxPrayerSlotsPerDay?: number;
     maxWorshipSlotsPerDay?: number;
     visibilityMode?: number;
+    liveGridUpcoming?: number;
   }
 ) {
   const config = await getBookingConfig();

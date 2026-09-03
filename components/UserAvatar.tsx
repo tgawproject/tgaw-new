@@ -7,12 +7,12 @@ import { cn } from "@/lib/utils";
  */
 
 const GRADIENTS = [
-  "from-blue-500 to-violet-500",
-  "from-amber-500 to-rose-500",
-  "from-emerald-500 to-teal-500",
-  "from-fuchsia-500 to-purple-500",
-  "from-sky-500 to-indigo-500",
-  "from-orange-500 to-pink-500",
+  "linear-gradient(135deg, #3b82f6, #8b5cf6)",
+  "linear-gradient(135deg, #f59e0b, #f43f5e)",
+  "linear-gradient(135deg, #10b981, #14b8a6)",
+  "linear-gradient(135deg, #d946ef, #a855f7)",
+  "linear-gradient(135deg, #0ea5e9, #6366f1)",
+  "linear-gradient(135deg, #f97316, #ec4899)",
 ] as const;
 
 export function gradientForName(name?: string | null): string {
@@ -48,13 +48,11 @@ export function UserAvatar({ name, image, className }: UserAvatarProps) {
   return (
     <Avatar className={cn("size-9 shrink-0", className)}>
       {image ? (
-        <AvatarImage src={image} alt={name ?? "User"} />
+        <AvatarImage src={image} alt={name ?? "User"} referrerPolicy="no-referrer" />
       ) : null}
       <AvatarFallback
-        className={cn(
-          "bg-linear-to-br text-white",
-          gradient,
-        )}
+        className="text-white"
+        style={{ backgroundImage: gradient }}
       >
         {initials}
       </AvatarFallback>

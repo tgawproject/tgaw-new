@@ -32,6 +32,7 @@ export const updateBookingConfigSchema = z.object({
   maxPrayerSlotsPerDay: z.number().int().min(0).max(48).optional(),
   maxWorshipSlotsPerDay: z.number().int().min(0).max(48).optional(),
   visibilityMode: z.number().int().min(1).max(4).optional(),
+  liveGridUpcoming: z.number().int().min(0).max(10).optional(),
 });
 
 // Meeting link management (leader/superadmin only)

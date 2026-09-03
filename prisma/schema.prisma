@@ -346,6 +346,7 @@ model BookingConfig {
   maxPrayerSlotsPerDay  Int       @default(2)
   maxWorshipSlotsPerDay Int       @default(2)
   visibilityMode        Int       @default(4)  // 1=Full Public, 2=Count Only, 3=Full Transparency, 4=Role-Scoped
+  liveGridUpcoming      Int       @default(2)  // upcoming slots per channel in OverviewLiveGrid; total = 1 live + upcoming
   updatedBy             String                 // last admin who changed config
   updatedAt             DateTime  @updatedAt
   createdAt             DateTime  @default(now())
