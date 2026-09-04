@@ -125,7 +125,7 @@ export default function GroupDetailPage() {
         </CardHeader>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-2 lg:grid-cols-3">
         <Card className="lg:col-span-1">
           <CardHeader><CardTitle className="flex items-center gap-2 text-sm"><Users className="size-4" />Members ({members.length})</CardTitle></CardHeader>
           <CardContent className="space-y-3">

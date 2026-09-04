@@ -385,7 +385,7 @@ export function EventFormDialog({
                   return (
                     <label
                       key={opt.id}
-                      className="flex cursor-pointer items-center gap-2 rounded-md border border-border/60 bg-muted/40 px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/80"
+                      className="flex cursor-pointer items-center gap-2 rounded-md border-[0.5px] border-border/60 bg-muted/40 px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/80"
                     >
                       <Checkbox
                         checked={checked}

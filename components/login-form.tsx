@@ -55,7 +55,7 @@ export function LoginForm({
 							<FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
 								Or continue with
 							</FieldSeparator>
-							<Field className="grid grid-cols-3 gap-4">
+							<Field className="grid grid-cols-3 gap-2">
 								<Button variant="outline" type="button">
 									<svg
 										xmlns="http://www.w3.org/2000/svg"

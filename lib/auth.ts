@@ -169,8 +169,165 @@ const options = {
         },
       },
       update: {
-        before: async (user, context) =>
-          preserveUserSetProfileOnLink(user, context),
+        before: async (user, context) => {
+          const res = await preserveUserSetProfileOnLink(user, context);
+          try {
+            const uData = (res && typeof res === "object" && "data" in res && res.data) ? res.data : user;
+            const targetId = (uData as Record<string, unknown>)?.id ?? (context as unknown as { body?: { userId?: string } })?.body?.userId ?? (context as unknown as { params?: { userId?: string } })?.params?.userId;
+            if (targetId && typeof targetId === "string" && ("role" in (uData as Record<string, unknown>) || "banned" in (uData as Record<string, unknown>))) {
+              const { prisma } = await import("@/lib/db/prisma");
+              const existing = await prisma.user.findUnique({
+                where: { id: targetId },
+                select: { id: true, email: true, role: true, banned: true, banReason: true, banExpires: true },
+              });
+              if (existing && context) {
+                (context as unknown as Record<string, unknown>).__auditPrevUser = existing;
+              }
+            }
+          } catch {}
+          return res;
+        },
+        after: async (user, context) => {
+          try {
+            const { logAudit, extractRequestContext } = await import("@/lib/services/auditService");
+            const u = user as unknown as { id: string; email: string; role?: string; banned?: boolean; banReason?: string; banExpires?: Date };
+            const prev = (context as unknown as Record<string, unknown>)?.__auditPrevUser as { id: string; email: string; role?: string; banned?: boolean; banReason?: string; banExpires?: Date } | undefined;
+
+            const actorId = (context as unknown as { session?: { user?: { id?: string; role?: string } } })?.session?.user?.id ?? u.id;
+            const actorRole = (context as unknown as { session?: { user?: { id?: string; role?: string } } })?.session?.user?.role ?? (u.role ?? null);
+            const reqCtx = (context as unknown as { request?: Request })?.request ? extractRequestContext((context as unknown as { request: Request }).request) : { ip: null, userAgent: null };
+
+            if (prev && prev.id === u.id) {
+              if (prev.role && u.role && prev.role !== u.role) {
+                await logAudit({
+                  actorId,
+                  actorRole,
+                  action: "USER_ROLE_CHANGE",
+                  targetType: "User",
+                  targetId: u.id,
+                  metadata: { before: prev.role, after: u.role, email: u.email },
+                  ip: reqCtx.ip,
+                  userAgent: reqCtx.userAgent,
+                });
+              }
+              if (!prev.banned && u.banned) {
+                await logAudit({
+                  actorId,
+                  actorRole,
+                  action: "USER_BAN",
+                  targetType: "User",
+                  targetId: u.id,
+                  metadata: { reason: u.banReason ?? null, banExpires: u.banExpires ?? null, email: u.email },
+                  ip: reqCtx.ip,
+                  userAgent: reqCtx.userAgent,
+                });
+              } else if (prev.banned && !u.banned) {
+                await logAudit({
+                  actorId,
+                  actorRole,
+                  action: "USER_UNBAN",
+                  targetType: "User",
+                  targetId: u.id,
+                  metadata: { email: u.email },
+                  ip: reqCtx.ip,
+                  userAgent: reqCtx.userAgent,
+                });
+              }
+            } else if ((context as unknown as { body?: { role?: string } })?.body?.role && u.role) {
+              await logAudit({
+                actorId,
+                actorRole,
+                action: "USER_ROLE_CHANGE",
+                targetType: "User",
+                targetId: u.id,
+                metadata: { after: u.role, email: u.email },
+                ip: reqCtx.ip,
+                userAgent: reqCtx.userAgent,
+              });
+            }
+          } catch {}
+        },
+      },
+      delete: {
+        after: async (user, context) => {
+          try {
+            const { logAudit, extractRequestContext } = await import("@/lib/services/auditService");
+            const u = user as unknown as { id: string; email: string; role?: string };
+            const actorId = (context as unknown as { session?: { user?: { id?: string; role?: string } } })?.session?.user?.id ?? u.id;
+            const actorRole = (context as unknown as { session?: { user?: { id?: string; role?: string } } })?.session?.user?.role ?? (u.role ?? null);
+            const reqCtx = (context as unknown as { request?: Request })?.request ? extractRequestContext((context as unknown as { request: Request }).request) : { ip: null, userAgent: null };
+            await logAudit({
+              actorId,
+              actorRole,
+              action: "USER_DELETE",
+              targetType: "User",
+              targetId: u.id,
+              metadata: { email: u.email },
+              ip: reqCtx.ip,
+              userAgent: reqCtx.userAgent,
+            });
+          } catch {}
+        },
+      },
+    },
+    session: {
+      create: {
+        after: async (session, context) => {
+          try {
+            const { logAudit, extractRequestContext } = await import("@/lib/services/auditService");
+            const actorId = (session as unknown as { userId: string }).userId ?? "unknown";
+            const reqCtx = (context as unknown as { request?: Request })?.request ? extractRequestContext((context as unknown as { request: Request }).request) : { ip: null, userAgent: null };
+            await logAudit({
+              actorId,
+              action: "AUTH_LOGIN_SUCCESS",
+              targetType: "Auth",
+              targetId: (session as unknown as { id: string }).id ?? "session",
+              metadata: { sessionId: (session as unknown as { id: string }).id },
+              ip: reqCtx.ip,
+              userAgent: reqCtx.userAgent,
+            });
+          } catch {}
+        },
+      },
+      delete: {
+        after: async (session, context) => {
+          try {
+            const { logAudit, extractRequestContext } = await import("@/lib/services/auditService");
+            const s = session as unknown as { userId?: string; id?: string };
+            if (s?.userId) {
+              const reqCtx = (context as unknown as { request?: Request })?.request ? extractRequestContext((context as unknown as { request: Request }).request) : { ip: null, userAgent: null };
+              await logAudit({
+                actorId: s.userId,
+                action: "AUTH_LOGOUT",
+                targetType: "Auth",
+                targetId: s.id ?? "session",
+                metadata: { sessionId: s.id },
+                ip: reqCtx.ip,
+                userAgent: reqCtx.userAgent,
+              });
+            }
+          } catch {}
+        },
+      },
+    },
+    account: {
+      create: {
+        after: async (account, context) => {
+          try {
+            const { logAudit, extractRequestContext } = await import("@/lib/services/auditService");
+            const acc = account as unknown as { userId: string; providerId: string; id: string };
+            const reqCtx = (context as unknown as { request?: Request })?.request ? extractRequestContext((context as unknown as { request: Request }).request) : { ip: null, userAgent: null };
+            await logAudit({
+              actorId: acc.userId,
+              action: "AUTH_LOGIN_SUCCESS",
+              targetType: "Auth",
+              targetId: acc.id,
+              metadata: { provider: acc.providerId, accountLink: true },
+              ip: reqCtx.ip,
+              userAgent: reqCtx.userAgent,
+            });
+          } catch {}
+        },
       },
     },
   },

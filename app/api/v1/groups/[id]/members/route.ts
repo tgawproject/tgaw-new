@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db/prisma";
 import { addGroupMemberSchema } from "@/lib/schemas/groupSchema";
+import { extractNextRequestContext, logAudit } from "@/lib/services/auditService";
 
 export async function GET(
 	req: NextRequest,
@@ -40,6 +41,18 @@ export async function POST(
 			userId: validation.data.userId,
 			role: validation.data.role,
 		},
+	});
+
+	const { ip, userAgent } = extractNextRequestContext(req as unknown as { headers: { get(k: string): string | null } });
+	await logAudit({
+		actorId: session.user.id!,
+		actorRole: (session.user.role as string) ?? null,
+		action: "GROUP_MEMBER_ROLE_CHANGE",
+		targetType: "GroupMember",
+		targetId: member.id,
+		metadata: { groupId: id, targetUserId: member.userId, role: member.role },
+		ip,
+		userAgent,
 	});
 
 	return NextResponse.json({ success: true, data: member }, { status: 201 });

@@ -166,7 +166,7 @@ export default function SignUpPage() {
 				or continue with
 			</p>
 
-			<div className="mt-4 grid grid-cols-2 gap-3">
+			<div className="mt-4 grid grid-cols-2 gap-2">
 				<Button
 					variant="outline"
 					type="button"

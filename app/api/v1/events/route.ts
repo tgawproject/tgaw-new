@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db/prisma";
 import { createEventSchema } from "@/lib/schemas/eventSchema";
+import { extractNextRequestContext, logAudit } from "@/lib/services/auditService";
 import {
   applyEventBlock,
   blockableSlotTypes,
@@ -141,6 +142,26 @@ export async function POST(req: NextRequest) {
 	});
 
 	const blocked = await applyEventBlock(event.id, toWindow(validation.data), allowed);
+
+	const { ip, userAgent } = extractNextRequestContext(req as unknown as { headers: { get(k: string): string | null } });
+	await logAudit({
+		actorId: session.user.id!,
+		actorRole: (session.user.role as string) ?? null,
+		action: "EVENT_CREATE",
+		targetType: "Event",
+		targetId: event.id,
+		metadata: {
+			title: event.title,
+			type: event.type,
+			date: event.date,
+			time: event.time,
+			duration: event.duration,
+			blockedSlotCount: blocked.blockedCount,
+			displacedUserIds: blocked.displaced,
+		},
+		ip,
+		userAgent,
+	});
 
 	return NextResponse.json(
 		{ success: true, data: event, blocked },

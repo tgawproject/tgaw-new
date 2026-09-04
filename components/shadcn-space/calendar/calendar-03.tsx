@@ -33,7 +33,7 @@ const CalendarThree = () => {
 			<div className="flex divide-x overflow-hidden rounded-md border bg-background">
 				<Calendar mode="single" onSelect={setDate} selected={date} />
 				<div className="relative w-[249px] overflow-hidden">
-					<div className="absolute inset-0 grid gap-4">
+					<div className="absolute inset-0 grid gap-2">
 						<div className="space-y-2 px-4 pt-4">
 							<p className="text-center text-sm font-medium">
 								Available Times

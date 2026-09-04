@@ -303,7 +303,7 @@ function ActivitySummary({ notifications }: { notifications: Notification[] }) {
 	];
 
 	return (
-		<div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+		<div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
 			{stats.map((stat) => (
 				<Card key={stat.label}>
 					<CardHeader className="pb-2">

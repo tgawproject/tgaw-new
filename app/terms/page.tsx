@@ -78,7 +78,7 @@ export default function TermsPage() {
         </div>
 
         {/* At a glance */}
-        <div className="mt-10 grid gap-4 sm:grid-cols-3">
+        <div className="mt-10 grid gap-2 sm:grid-cols-3">
           {atAGlance.map((c) => (
             <Card key={c.title}>
               <CardHeader className="pb-2">

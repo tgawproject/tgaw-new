@@ -344,7 +344,7 @@ export function LandingContent({ verseSlot }: { verseSlot?: React.ReactNode }) {
             initial={reduceMotion ? false : "hidden"}
             whileInView="visible"
             viewport={{ once: true, margin: "-80px" }}
-            className="mx-auto grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-4"
+            className="mx-auto grid max-w-5xl gap-2 sm:grid-cols-2 lg:grid-cols-4"
           >
             {STATS.map((stat) => (
               <motion.div key={stat.label} variants={staggerItem}>
@@ -390,7 +390,7 @@ export function LandingContent({ verseSlot }: { verseSlot?: React.ReactNode }) {
             initial={reduceMotion ? false : "hidden"}
             whileInView="visible"
             viewport={{ once: true, margin: "-60px" }}
-            className="mx-auto grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3"
+            className="mx-auto grid max-w-5xl gap-2 sm:grid-cols-2 lg:grid-cols-3"
           >
             {FEATURES.map((feature) => (
               <motion.div key={feature.title} variants={staggerItem} className="h-full">
@@ -467,7 +467,7 @@ export function LandingContent({ verseSlot }: { verseSlot?: React.ReactNode }) {
             initial={reduceMotion ? false : "hidden"}
             whileInView="visible"
             viewport={{ once: true, margin: "-60px" }}
-            className="mx-auto grid max-w-5xl gap-6 md:grid-cols-3"
+            className="mx-auto grid max-w-5xl gap-2 md:grid-cols-3"
           >
             {TESTIMONIALS.map((t) => (
               <motion.div key={t.name} variants={staggerItem} className="h-full">

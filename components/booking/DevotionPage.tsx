@@ -91,7 +91,7 @@ export async function DevotionPage({
 			</FadeIn>
 
 			<FadeIn delay={0.06}>
-				<div className="grid gap-4 sm:grid-cols-3">
+				<div className="grid gap-2 sm:grid-cols-3">
 					<StatCard
 						title="Sessions This Week"
 						value={stats.weekSessions}
@@ -124,7 +124,7 @@ export async function DevotionPage({
 				</Card>
 			</FadeIn>
 
-			<div className="grid gap-6 lg:grid-cols-2">
+			<div className="grid gap-2 lg:grid-cols-2">
 				<FadeIn delay={0.18}>
 					<Card className="h-full min-w-0">
 						<CardHeader>

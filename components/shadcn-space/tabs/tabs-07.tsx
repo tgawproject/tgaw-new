@@ -176,7 +176,7 @@ export default function TabsScrollSwitch() {
                     <div className="h-px bg-border" />
 
                     {/* Stats row */}
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-3 gap-2">
                       {tab.stats.map((s) => (
                         <div key={s.label}>
                           <div className="text-2xl font-bold tracking-tight text-foreground tabular-nums">{s.value}</div>

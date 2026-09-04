@@ -109,7 +109,7 @@ export default function GroupsPage() {
 
   if (loading) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {[1,2,3].map((i) => <Skeleton key={i} className="h-48" />)}
       </div>
     )
@@ -185,7 +185,7 @@ export default function GroupsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {groups.map((g) => (
             <Card key={g.id} className="overflow-hidden flex flex-col">
               <div className="relative h-28 w-full bg-muted">

@@ -233,7 +233,7 @@ function ChannelSection({
           View all →
         </Link>
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         {slots.map((s) => (
           <SlotCard key={s.id} slot={s} isLive={liveIds.has(s.id)} />
         ))}
@@ -312,13 +312,13 @@ export function OverviewLiveGrid({ upcoming = 2 }: { upcoming?: number }) {
   if (!data) {
     const skelCount = Math.max(1, Math.min(11, upcoming + 1))
     return (
-      <Card className="border border-border/60">
+      <Card className="border-[0.5px] border-border/60">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Clock className="size-4" /> Live Now & Up Next
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-3">
+        <CardContent className="grid gap-2 sm:grid-cols-3">
           {Array.from({ length: skelCount }).map((_, i) => (
             <Skeleton key={i} className="h-20" />
           ))}
@@ -331,7 +331,7 @@ export function OverviewLiveGrid({ upcoming = 2 }: { upcoming?: number }) {
 
   if (isEmpty) {
     return (
-      <Card className="border border-border/60">
+      <Card className="border-[0.5px] border-border/60">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Clock className="size-4" />
@@ -352,7 +352,7 @@ export function OverviewLiveGrid({ upcoming = 2 }: { upcoming?: number }) {
   }
 
   return (
-    <Card className="border border-border/60">
+    <Card className="border-[0.5px] border-border/60">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <Clock className="size-4" aria-hidden="true" />

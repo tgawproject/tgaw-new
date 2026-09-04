@@ -88,7 +88,7 @@ export default function PrivacyPage() {
         </Card>
 
         {/* Overview cards */}
-        <div className="mt-10 grid gap-4 sm:grid-cols-3">
+        <div className="mt-10 grid gap-2 sm:grid-cols-3">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm">
@@ -191,7 +191,7 @@ export default function PrivacyPage() {
 
         {/* Purposes & bases */}
         <h2 className="mt-12 text-2xl tracking-tight">3. Purposes & legal bases (GDPR Art. 6)</h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm"><FileText aria-hidden="true" className="size-4 text-primary" /> Contract</CardTitle>
@@ -317,7 +317,7 @@ export default function PrivacyPage() {
             </table>
           </div>
         </Card>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
           <Card className="border-dashed">
             <CardContent className="pt-6 text-sm text-muted-foreground">
               <p className="flex items-center gap-2 font-medium text-foreground"><Trash2 aria-hidden="true" className="size-4" /> Deletion</p>

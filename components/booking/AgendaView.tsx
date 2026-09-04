@@ -147,7 +147,7 @@ export function AgendaView({ days, summary }: AgendaViewProps) {
             {day.events.map((evt) => (
               <li
                 key={evt.id}
-                className="grid grid-cols-[80px_1fr] gap-3 rounded-xl border border-border/60 bg-background/40 px-3 py-3 transition-colors hover:bg-background/60"
+                className="grid grid-cols-[80px_1fr] gap-2 rounded-xl border-[0.5px] border-border/60 bg-background/40 px-3 py-3 transition-colors hover:bg-background/60"
               >
                 <div className="font-mono text-[11px]">
                   <div className="text-foreground">

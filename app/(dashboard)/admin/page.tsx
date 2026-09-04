@@ -30,15 +30,18 @@ export default async function AdminPage() {
         <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
           <Shield className="size-5 text-primary" aria-hidden="true" />
         </div>
-        <div>
+        <div className="flex-1">
           <h2 className="text-2xl font-semibold">Admin Portal</h2>
           <p className="text-sm text-muted-foreground">
             Manage booking slots, meeting links, and community moderation.
           </p>
         </div>
+        <a href="/admin/activity-logs" className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+          Activity Logs
+        </a>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Members"
           value={totalMembers}
@@ -75,7 +78,7 @@ export default async function AdminPage() {
         </p>
       </div>
 
-      <div className="grid items-start gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid items-start gap-2 md:grid-cols-2 xl:grid-cols-3">
         <AdminBookingConfig initialConfig={bookingConfig} />
         <AdminMeetingLinkManager />
         <div className="md:col-span-2 xl:col-span-1">

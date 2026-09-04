@@ -34,7 +34,7 @@ export default async function BoardDashboardPage() {
         <h2 className="text-2xl tracking-tight">Board Dashboard</h2>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-sm font-medium">

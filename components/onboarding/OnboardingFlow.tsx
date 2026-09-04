@@ -379,7 +379,7 @@ function AboutStep({ form }: { form: UseFormReturn<OnboardingValues> }) {
           <Label>
             Sex <span className="text-destructive">*</span>
           </Label>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <button
               type="button"
               onClick={() => setValue("sex", "male", { shouldValidate: true })}

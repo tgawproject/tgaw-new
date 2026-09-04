@@ -196,7 +196,7 @@ export function MeetingBanner({
 
   const hasSpecial = specialEvents.length > 0
   const gridClassName = cn(
-    "grid grid-cols-1 gap-3",
+    "grid grid-cols-1 gap-2",
     hasSpecial ? "sm:grid-cols-2 lg:grid-cols-4" : "md:grid-cols-3"
   )
 
@@ -247,7 +247,7 @@ export function MeetingBanner({
           </div>
         </CardContent>
 
-        <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-border/60 pt-2.5">
+        <div className="mt-2.5 flex items-center justify-between gap-2 border-t-[0.5px] border-border/60 pt-2.5">
           <Button
             variant="outline"
             size="sm"
@@ -382,7 +382,7 @@ export function MeetingBanner({
               </div>
             </CardContent>
 
-            <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-border/60 pt-2.5">
+            <div className="mt-2.5 flex items-center justify-between gap-2 border-t-[0.5px] border-border/60 pt-2.5">
               <Button
                 variant="outline"
                 size="sm"

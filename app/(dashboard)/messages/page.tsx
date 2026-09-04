@@ -110,7 +110,7 @@ export default function MessagesPage() {
   const activeConv = convs.find((c) => c.id === activeId)
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
+    <div className="grid gap-2 lg:grid-cols-[360px_1fr]">
       <Card className="flex flex-col">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base"><MessageSquare className="size-4" />Messages {connected ? <span className="text-xs font-normal text-emerald-600">● live</span> : null}</CardTitle>

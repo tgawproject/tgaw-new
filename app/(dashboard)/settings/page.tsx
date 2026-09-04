@@ -1054,7 +1054,7 @@ export default function SettingsPage() {
                             </Button>
                           </div>
 
-                          <div className="grid gap-6 sm:grid-cols-2">
+                          <div className="grid gap-2 sm:grid-cols-2">
                             <div className="space-y-2">
                               <Label
                                 htmlFor="name"
@@ -1097,7 +1097,7 @@ export default function SettingsPage() {
                             </div>
                           </div>
 
-                          <div className="grid gap-6 sm:grid-cols-2">
+                          <div className="grid gap-2 sm:grid-cols-2">
                             <div className="space-y-2">
                               <Label
                                 htmlFor="phone"
@@ -1160,7 +1160,7 @@ export default function SettingsPage() {
                             </div>
                           </div>
 
-                          <div className="grid gap-6 sm:grid-cols-3">
+                          <div className="grid gap-2 sm:grid-cols-3">
                             <div className="space-y-2">
                               <Label className="text-sm text-muted-foreground">
                                 Sex

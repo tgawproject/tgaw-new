@@ -423,7 +423,7 @@ export function AdminMeetingLinkManager() {
                             </div>
                           )}
 
-                          <div className="space-y-2 pt-1 lg:grid lg:grid-cols-1 lg:gap-4 lg:space-y-0">
+                          <div className="space-y-2 pt-1 lg:grid lg:grid-cols-1 lg:gap-2 lg:space-y-0">
                             <div className="space-y-1">
                               <Label htmlFor={`def-url-${t}`} className="text-[11px]">Meeting URL</Label>
                               <Input
@@ -543,7 +543,7 @@ export function AdminMeetingLinkManager() {
             </div>
 
             {/* Row 3: Meeting URL + Label — side by side on larger screens */}
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-2">
               <div className="space-y-2">
                 <Label htmlFor="ml-url">Meeting URL</Label>
                 <Input

@@ -52,7 +52,7 @@ export default function CookiesPage() {
         </div>
 
         {/* Overview cards */}
-        <div className="mt-10 grid gap-4 sm:grid-cols-3">
+        <div className="mt-10 grid gap-2 sm:grid-cols-3">
           <Card>
             <CardHeader className="pb-2"><CardTitle className="flex items-center gap-2 text-sm"><ShieldCheck aria-hidden="true" className="size-4 text-emerald-600" /> GDPR / ePrivacy</CardTitle></CardHeader>
             <CardContent><p className="text-sm text-muted-foreground">EU/EEA, UK & Brazil: non-essential cookies stay <span className="font-medium text-foreground">off until you consent</span>. Accept and Reject are equally prominent. You can change your mind anytime.</p></CardContent>
@@ -69,7 +69,7 @@ export default function CookiesPage() {
 
         {/* Categories */}
         <h2 className="mt-12 text-2xl tracking-tight">Cookie categories</h2>
-        <div className="mt-4 grid gap-4">
+        <div className="mt-4 grid gap-2">
           <Card>
             <CardHeader><CardTitle className="text-base">Strictly Necessary — always on</CardTitle><CardDescription>Required for the site to function. Cannot be disabled.</CardDescription></CardHeader>
             <CardContent className="text-sm text-muted-foreground"><ul className="list-disc pl-5 space-y-1"><li><code className="rounded bg-muted px-1 py-0.5 text-xs">better-auth.*</code> — authentication & session</li><li><code className="rounded bg-muted px-1 py-0.5 text-xs">tgaw_consent</code> — remembers your choice (12 months)</li><li><code className="rounded bg-muted px-1 py-0.5 text-xs">__Host-*</code> — CSRF / security</li></ul></CardContent>

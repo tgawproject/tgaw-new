@@ -352,6 +352,74 @@ model BookingConfig {
   createdAt             DateTime  @default(now())
 }
 
+enum AuditAction {
+  USER_ROLE_CHANGE
+  USER_BAN
+  USER_UNBAN
+  USER_DELETE
+  COORDINATOR_ASSIGN
+  SLOT_BOOK
+  SLOT_CANCEL
+  SLOT_ASSIGN
+  SLOT_ADMIN_CANCEL
+  SLOT_ADMIN_BOOK
+  BOOKING_CONFIG_CHANGE
+  MEETING_LINK_UPSERT
+  MEETING_LINK_DELETE
+  SLOTS_GENERATE
+  EVENT_CREATE
+  EVENT_DELETE
+  POST_HIDE
+  POST_UNHIDE
+  COMMENT_HIDE
+  REPORT_RESOLVE
+  BROADCAST_CREATE
+  GROUP_CREATE
+  GROUP_DELETE
+  GROUP_MEMBER_ROLE_CHANGE
+  PROFILE_UPDATE
+  AUTH_LOGIN_SUCCESS
+  AUTH_LOGIN_FAILURE
+  AUTH_LOGOUT
+  AUTH_PASSWORD_CHANGE
+}
+
+enum AuditTargetType {
+  User
+  Slot
+  BookingConfig
+  MeetingLink
+  Event
+  Post
+  Comment
+  Report
+  Broadcast
+  Group
+  GroupMember
+  CoordinatorAssignment
+  Auth
+}
+
+model AuditLog {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  actorId    String                          // plain String — User.id is Better Auth random string
+  actorRole  String?                         // role at time of action
+  action     AuditAction
+  targetType AuditTargetType
+  targetId   String                          // entity id or "N/A"
+  createdAt  DateTime @default(now())
+  metadata   Json?                           // before/after, reason, host, etc.
+  ip         String?
+  userAgent  String?
+  expiresAt  DateTime?                       // tiered TTL: null = indefinite for critical
+
+  @@index([actorId])
+  @@index([action])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+  @@index([expiresAt])
+}
+
 
 model VerseOfDay {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId

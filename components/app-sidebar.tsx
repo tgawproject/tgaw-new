@@ -13,6 +13,7 @@ import {
   MessageSquare,
   Music,
   PenTool,
+  ScrollText,
   Shield,
   ShieldCheck,
   UserCog,
@@ -138,6 +139,11 @@ export function AppSidebar({
         title: "Admin Portal",
         url: "/admin",
         icon: <Shield className="size-4" />,
+      },
+      {
+        title: "Activity logs",
+        url: "/admin/activity-logs",
+        icon: <ScrollText className="size-4" />,
       },
     ]
     if (isSuperadmin) {

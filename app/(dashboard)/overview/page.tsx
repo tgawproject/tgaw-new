@@ -302,7 +302,7 @@ export default async function OverviewPage() {
           )}
         </p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Sessions Today"
           value={sessionCount}
@@ -336,7 +336,7 @@ export default async function OverviewPage() {
       </div>
 
       <VerseCard />
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <div className="sm:col-span-1 lg:col-span-1">
           <AgendaView days={days} summary={summary} />
         </div>
@@ -357,7 +357,7 @@ export default async function OverviewPage() {
         initialSpecialEvents={specialEvents}
       />
 
-      <div className="grid hidden gap-6 lg:grid-cols-3">
+      <div className="grid hidden gap-2 lg:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

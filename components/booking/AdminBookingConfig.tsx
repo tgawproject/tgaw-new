@@ -90,7 +90,7 @@ export function AdminBookingConfig({
       <CardContent className="space-y-6">
         <div className="space-y-4">
           <h3 className="text-sm font-medium">Daily Limits (Slots per user)</h3>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-2">
             <div className="space-y-2">
               <Label htmlFor="maxBible">Bible</Label>
               <Input
@@ -144,7 +144,7 @@ export function AdminBookingConfig({
 
         <div className="space-y-4">
           <h3 className="text-sm font-medium">Overview Live Grid</h3>
-          <div className="grid gap-4 sm:grid-cols-1">
+          <div className="grid gap-2 sm:grid-cols-1">
             <div className="space-y-2">
               <Label htmlFor="liveGridUpcoming">
                 Upcoming slots per channel

@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db/prisma";
 import { updateEventSchema } from "@/lib/schemas/eventSchema";
+import { extractNextRequestContext, logAudit } from "@/lib/services/auditService";
 import {
   applyEventBlock,
   blockableSlotTypes,
@@ -139,8 +140,35 @@ export async function DELETE(
 	}
 
 	const { id } = await params;
+	const existing = await prisma.event.findUnique({ where: { id } });
+	if (!existing) {
+		return NextResponse.json(
+			{ success: false, error: "Not found" },
+			{ status: 404 },
+		);
+	}
+
 	// Unblock any slots this event blocked, restoring displaced bookers.
 	await restoreEventBlock(id);
 	await prisma.event.delete({ where: { id } });
+
+	const { ip, userAgent } = extractNextRequestContext(req as unknown as { headers: { get(k: string): string | null } });
+	await logAudit({
+		actorId: session.user.id!,
+		actorRole: (session.user.role as string) ?? null,
+		action: "EVENT_DELETE",
+		targetType: "Event",
+		targetId: id,
+		metadata: {
+			title: existing.title,
+			type: existing.type,
+			date: existing.date,
+			time: existing.time,
+			duration: existing.duration,
+		},
+		ip,
+		userAgent,
+	});
+
 	return NextResponse.json({ success: true, data: null });
 }

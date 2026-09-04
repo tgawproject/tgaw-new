@@ -74,7 +74,7 @@ const Statistics = ({
   return (
     <div className="w-full py-2">
       <div className="mx-auto w-full">
-        <div className="grid h-full grid-cols-12 gap-4">
+        <div className="grid h-full grid-cols-12 gap-2">
           <div className="col-span-12 h-full shadow-xs xl:col-span-6">
             <Card className="relative h-full rounded-xl border p-0! ring-0">
               <CardContent className="p-0!">

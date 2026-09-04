@@ -3,6 +3,7 @@ import { headers } from "next/headers"
 import { z } from "zod"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db/prisma"
+import { extractNextRequestContext, logAudit } from "@/lib/services/auditService"
 
 const putSchema = z.object({
   userId: z.string().min(1),
@@ -35,14 +36,11 @@ export async function PUT(req: Request) {
   }
   const { userId, timezones } = parsed.data
 
-  // ensure user exists and is coordinator (or will become)
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } })
   if (!user) return NextResponse.json({ success: false, error: "User not found" }, { status: 404 })
 
-  // Validate timezones are IANA-like
   const invalid = timezones.filter((tz) => {
     try {
-      // Intl throws for invalid
       new Intl.DateTimeFormat("en", { timeZone: tz })
       return false
     } catch {
@@ -53,7 +51,7 @@ export async function PUT(req: Request) {
     return NextResponse.json({ success: false, error: `Invalid timezones: ${invalid.join(", ")}` }, { status: 400 })
   }
 
-  // Replace assignments
+  const before = await prisma.coordinatorAssignment.findMany({ where: { userId } })
   await prisma.coordinatorAssignment.deleteMany({ where: { userId } })
   if (timezones.length > 0) {
     await prisma.coordinatorAssignment.createMany({
@@ -61,5 +59,16 @@ export async function PUT(req: Request) {
     })
   }
   const rows = await prisma.coordinatorAssignment.findMany({ where: { userId } })
+  const { ip, userAgent } = extractNextRequestContext(req as unknown as { headers: { get(k: string): string | null } })
+  await logAudit({
+    actorId: session.user.id,
+    actorRole: role,
+    action: "COORDINATOR_ASSIGN",
+    targetType: "CoordinatorAssignment",
+    targetId: userId,
+    metadata: { before: before.map((r) => r.timezone), after: timezones, count: rows.length },
+    ip,
+    userAgent,
+  })
   return NextResponse.json({ success: true, data: rows })
 }
