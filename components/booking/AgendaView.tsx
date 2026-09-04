@@ -111,7 +111,7 @@ export function AgendaView({ days, summary }: AgendaViewProps) {
   }
 
   return (
-    <div>
+    <div className="h-full rounded-xl border-[0.5px] border-border/60 bg-background/40 p-2 sm:p-4">
       <div className="flex items-end justify-between gap-4">
         <div>
           <div className="font-mono text-[10px] tracking-[0.3em] text-muted-foreground uppercase">
